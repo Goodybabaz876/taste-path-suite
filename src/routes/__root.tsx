@@ -77,17 +77,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SavorFlow — Restaurant Ordering & Delivery Platform Proposal" },
+      { title: "SavorFlow — Order from the city's best kitchens" },
       {
         name: "description",
         content:
-          "Executive proposal, SRS, UI/UX design guide, and development blueprint for a modern restaurant ordering, delivery, and management platform.",
+          "Discover, order, and track meals from top restaurants near you. Fast delivery, live tracking, and thousands of dishes in one premium ordering experience.",
       },
-      { property: "og:title", content: "SavorFlow — Restaurant Ordering & Delivery Platform Proposal" },
+      { property: "og:title", content: "SavorFlow — Order from the city's best kitchens" },
       {
         property: "og:description",
         content:
-          "A complete business proposal and software specification for a scalable restaurant ordering & delivery management system.",
+          "Discover, order, and track meals from top restaurants near you with SavorFlow.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -99,7 +99,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Figtree:wght@300;400;500;600;700&display=swap",
       },
     ],
   }),
