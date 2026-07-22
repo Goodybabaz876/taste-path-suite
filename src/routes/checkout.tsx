@@ -1,0 +1,277 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { z } from "zod";
+import { Check, CreditCard, MapPin, Truck, Store, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
+import { AppShell, PageHeader } from "@/components/AppShell";
+import { useCart } from "@/lib/cart";
+import { formatNaira } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+
+export const Route = createFileRoute("/checkout")({ component: CheckoutPage });
+
+const addressSchema = z.object({
+  street: z.string().trim().min(3, "Street required").max(120),
+  city: z.string().trim().min(2, "City required").max(60),
+  postal_code: z.string().trim().min(3, "Postal code required").max(20),
+  instructions: z.string().trim().max(200).optional(),
+});
+const cardSchema = z.object({
+  number: z.string().regex(/^\d{16}$/, "Enter 16-digit card number"),
+  exp: z.string().regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "MM/YY"),
+  cvc: z.string().regex(/^\d{3,4}$/, "3-4 digit CVC"),
+  name: z.string().trim().min(2, "Cardholder name required"),
+});
+
+function CheckoutPage() {
+  const { items, subtotal, clear } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [fulfillment, setFulfillment] = useState<"delivery" | "pickup">("delivery");
+  const [address, setAddress] = useState({ street: "", city: "Ondo", postal_code: "", instructions: "" });
+  const [card, setCard] = useState({ number: "", exp: "", cvc: "", name: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [placing, setPlacing] = useState(false);
+
+  const delivery = fulfillment === "delivery" && subtotal > 0 ? 1000 : 0;
+  const tax = Math.round(subtotal * 0.075);
+  const total = subtotal + delivery + tax;
+
+  if (items.length === 0) {
+    return (
+      <AppShell>
+        <div className="rounded-2xl border border-border/60 bg-card p-10 text-center">
+          <ShoppingBag className="mx-auto h-8 w-8 text-muted-foreground" />
+          <div className="mt-3 text-sm text-muted-foreground">Your cart is empty.</div>
+          <Link to="/" className="mt-4 inline-flex rounded-xl gradient-hero px-4 py-2 text-xs font-semibold text-white">Browse menu</Link>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const next = () => {
+    setErrors({});
+    if (step === 1) { setStep(fulfillment === "delivery" ? 2 : 3); return; }
+    if (step === 2) {
+      const r = addressSchema.safeParse(address);
+      if (!r.success) {
+        const errs: Record<string, string> = {};
+        r.error.issues.forEach((i) => (errs[String(i.path[0])] = i.message));
+        setErrors(errs);
+        return;
+      }
+      setStep(3);
+      return;
+    }
+  };
+
+  const place = async () => {
+    setErrors({});
+    const r = cardSchema.safeParse(card);
+    if (!r.success) {
+      const errs: Record<string, string> = {};
+      r.error.issues.forEach((i) => (errs[String(i.path[0])] = i.message));
+      setErrors(errs);
+      return;
+    }
+    if (!user) {
+      toast.error("Please sign in to place your order");
+      navigate({ to: "/auth", search: { redirect: "/checkout" } as never });
+      return;
+    }
+    setPlacing(true);
+    try {
+      const eta = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+      const { data: order, error } = await supabase
+        .from("orders")
+        .insert({
+          user_id: user.id,
+          status: "placed",
+          fulfillment,
+          subtotal,
+          delivery_fee: delivery,
+          tax,
+          total,
+          delivery_address: fulfillment === "delivery" ? address : null,
+          estimated_ready_at: eta,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+
+      const lines = items.map((i) => ({
+        order_id: order.id,
+        menu_item_id: i.menu_item_id,
+        name: i.name,
+        unit_price: i.unit_price,
+        quantity: i.quantity,
+        customizations: i.customizations as never,
+        line_total: i.unit_price * i.quantity,
+      }));
+      const { error: liErr } = await supabase.from("order_items").insert(lines);
+      if (liErr) throw liErr;
+
+      clear();
+      toast.success("Order placed! Tracking it now.");
+      navigate({ to: "/order/$id", params: { id: order.id } });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      toast.error(msg);
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  return (
+    <AppShell>
+      <PageHeader title="Checkout" subtitle="Just a few steps away from your meal." />
+
+      <Stepper step={step} hasDelivery={fulfillment === "delivery"} />
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          {step === 1 && (
+            <Card title="How would you like to receive your order?">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <FulfillmentOption active={fulfillment === "delivery"} onClick={() => setFulfillment("delivery")} icon={Truck} title="Delivery" desc="We'll bring it to your hostel." />
+                <FulfillmentOption active={fulfillment === "pickup"} onClick={() => setFulfillment("pickup")} icon={Store} title="Pickup" desc="Skip the fee. Grab it hot." />
+              </div>
+            </Card>
+          )}
+
+          {step === 2 && fulfillment === "delivery" && (
+            <Card title="Delivery address">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Street & Hostel block" value={address.street} onChange={(v) => setAddress({ ...address, street: v })} error={errors.street} className="sm:col-span-2" />
+                <Field label="City" value={address.city} onChange={(v) => setAddress({ ...address, city: v })} error={errors.city} />
+                <Field label="Postal code" value={address.postal_code} onChange={(v) => setAddress({ ...address, postal_code: v })} error={errors.postal_code} />
+                <Field label="Special instructions (optional)" value={address.instructions} onChange={(v) => setAddress({ ...address, instructions: v })} error={errors.instructions} className="sm:col-span-2" />
+              </div>
+            </Card>
+          )}
+
+          {step === 3 && (
+            <>
+              <Card title="Payment details">
+                <div className="mb-3 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 p-3 text-xs text-accent">
+                  <CreditCard className="h-4 w-4" /> Demo checkout — no real charge is made.
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Cardholder name" value={card.name} onChange={(v) => setCard({ ...card, name: v })} error={errors.name} className="sm:col-span-2" />
+                  <Field label="Card number" value={card.number} onChange={(v) => setCard({ ...card, number: v.replace(/\D/g, "").slice(0, 16) })} placeholder="4242424242424242" error={errors.number} className="sm:col-span-2" />
+                  <Field label="Expiry (MM/YY)" value={card.exp} onChange={(v) => setCard({ ...card, exp: v.slice(0, 5) })} placeholder="12/28" error={errors.exp} />
+                  <Field label="CVC" value={card.cvc} onChange={(v) => setCard({ ...card, cvc: v.replace(/\D/g, "").slice(0, 4) })} placeholder="123" error={errors.cvc} />
+                </div>
+              </Card>
+
+              <Card title="Review your order">
+                <div className="space-y-2 text-sm">
+                  {items.map((i) => (
+                    <div key={i.key} className="flex justify-between">
+                      <span>{i.quantity} × {i.name} <span className="text-[11px] text-muted-foreground">({i.customizations.size})</span></span>
+                      <span className="font-semibold">{formatNaira(i.unit_price * i.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link to="/cart" className="mt-3 inline-block text-xs text-accent hover:underline">Edit cart</Link>
+              </Card>
+            </>
+          )}
+
+          <div className="flex justify-between">
+            {step > 1 ? (
+              <button onClick={() => setStep(step === 3 && fulfillment === "pickup" ? 1 : step - 1)} className="rounded-xl border border-border/60 bg-white/5 px-4 py-2.5 text-sm font-semibold hover:bg-white/10">
+                Back
+              </button>
+            ) : <div />}
+            {step < 3 ? (
+              <button onClick={next} className="rounded-xl gradient-hero px-6 py-2.5 text-sm font-semibold text-white shadow-glow">
+                Continue
+              </button>
+            ) : (
+              <button onClick={place} disabled={placing} className="rounded-xl gradient-hero px-6 py-2.5 text-sm font-semibold text-white shadow-glow disabled:opacity-60">
+                {placing ? "Placing..." : `Pay ${formatNaira(total)}`}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <aside className="h-fit rounded-2xl border border-border/60 bg-card p-5">
+          <div className="font-display text-lg font-bold">Summary</div>
+          <div className="mt-4 space-y-2 text-sm">
+            <Row label="Subtotal" value={formatNaira(subtotal)} />
+            <Row label="Delivery" value={formatNaira(delivery)} />
+            <Row label="VAT (7.5%)" value={formatNaira(tax)} />
+          </div>
+          <div className="mt-4 border-t border-border/60 pt-4 flex justify-between">
+            <div className="font-display font-bold">Total</div>
+            <div className="font-display text-xl font-black text-accent">{formatNaira(total)}</div>
+          </div>
+        </aside>
+      </div>
+    </AppShell>
+  );
+}
+
+function Stepper({ step, hasDelivery }: { step: number; hasDelivery: boolean }) {
+  const steps = hasDelivery
+    ? [{ n: 1, l: "Fulfillment", icon: Truck }, { n: 2, l: "Address", icon: MapPin }, { n: 3, l: "Payment", icon: CreditCard }]
+    : [{ n: 1, l: "Fulfillment", icon: Store }, { n: 3, l: "Payment", icon: CreditCard }];
+  return (
+    <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-3">
+      {steps.map((s, idx) => {
+        const active = step === s.n;
+        const done = step > s.n;
+        return (
+          <div key={s.n} className="flex flex-1 items-center gap-2">
+            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold ${done ? "gradient-hero text-white" : active ? "bg-primary/20 text-foreground ring-2 ring-primary" : "bg-white/5 text-muted-foreground"}`}>
+              {done ? <Check className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
+            </div>
+            <div className="hidden text-xs font-semibold sm:block">{s.l}</div>
+            {idx < steps.length - 1 && <div className={`h-0.5 flex-1 rounded-full ${done ? "bg-primary" : "bg-white/10"}`} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-5">
+      <div className="mb-4 font-display text-lg font-bold">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function FulfillmentOption({ active, onClick, icon: Icon, title, desc }: { active: boolean; onClick: () => void; icon: typeof Truck; title: string; desc: string }) {
+  return (
+    <button onClick={onClick} className={`rounded-2xl border p-4 text-left transition ${active ? "border-primary bg-primary/15 shadow-glow" : "border-border/60 bg-white/5 hover:bg-white/10"}`}>
+      <Icon className="h-5 w-5 text-accent" />
+      <div className="mt-2 font-display font-bold">{title}</div>
+      <div className="text-xs text-muted-foreground">{desc}</div>
+    </button>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, error, className }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; error?: string; className?: string }) {
+  return (
+    <label className={`block ${className ?? ""}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</div>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`mt-1.5 h-10 w-full rounded-xl border bg-white/5 px-3 text-sm focus:outline-none focus:ring-2 ${error ? "border-destructive focus:ring-destructive/40" : "border-border/60 focus:border-primary/60 focus:ring-primary/30"}`}
+      />
+      {error && <div className="mt-1 text-[11px] text-destructive">{error}</div>}
+    </label>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return <div className="flex justify-between text-muted-foreground"><span>{label}</span><span className="text-foreground">{value}</span></div>;
+}
