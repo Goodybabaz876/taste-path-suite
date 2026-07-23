@@ -1,31 +1,33 @@
-import sushi from "@/assets/dish-sushi.jpg";
-import pizza from "@/assets/dish-pizza.jpg";
-import bowl from "@/assets/dish-bowl.jpg";
-import ramen from "@/assets/dish-ramen.jpg";
-import dessert from "@/assets/dish-dessert.jpg";
-import tacos from "@/assets/dish-tacos.jpg";
-import hero from "@/assets/hero-midnight.jpg";
+import jollof from "@/assets/dish-jollof.png";
+import egusi from "@/assets/dish-egusi.png";
+import suya from "@/assets/dish-suya.png";
+import akara from "@/assets/dish-akara.png";
+import peppersoup from "@/assets/dish-peppersoup.png";
+import dodo from "@/assets/dish-dodo.png";
+import puffpuff from "@/assets/dish-puffpuff.png";
+import heroBanner from "@/assets/hero-food-banner.png";
 
-// Map dish names/slugs to available imagery until real photos are uploaded.
 const MAP: Record<string, string> = {
-  Akara: tacos,
-  "Moi Moi": bowl,
-  Suya: pizza,
-  "Jollof Rice": hero,
-  "Egusi Soup": ramen,
-  "Pounded Yam & Efo Riro": bowl,
-  "Pepper Soup (Catfish)": ramen,
-  "Waist Beads Chicken": pizza,
-  Eba: bowl,
-  Fufu: bowl,
-  "Fried Plantain": tacos,
-  Zobo: dessert,
-  Chapman: dessert,
-  Kunu: dessert,
-  "Puff Puff": dessert,
-  "Chin Chin": sushi,
+  "Akara": akara,
+  "Moi Moi": akara,
+  "Suya": suya,
+  "Jollof Rice": jollof,
+  "Egusi Soup": egusi,
+  "Pounded Yam & Efo Riro": egusi,
+  "Pepper Soup (Catfish)": peppersoup,
+  "Waist Beads Chicken": suya,
+  "Eba": egusi,
+  "Fufu": egusi,
+  "Fried Plantain": dodo,
+  "Zobo": puffpuff,
+  "Chapman": puffpuff,
+  "Kunu": puffpuff,
+  "Puff Puff": puffpuff,
+  "Chin Chin": puffpuff,
 };
 
 export function dishImage(name: string, fallback: string | null = null) {
-  return MAP[name] ?? fallback ?? hero;
+  return MAP[name] ?? fallback ?? jollof;
 }
+
+export { heroBanner };

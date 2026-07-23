@@ -42,10 +42,12 @@ function CheckoutPage() {
   if (items.length === 0) {
     return (
       <AppShell>
-        <div className="rounded-2xl border border-border/60 bg-card p-10 text-center">
-          <ShoppingBag className="mx-auto h-8 w-8 text-muted-foreground" />
-          <div className="mt-3 text-sm text-muted-foreground">Your cart is empty.</div>
-          <Link to="/" className="mt-4 inline-flex rounded-xl gradient-hero px-4 py-2 text-xs font-semibold text-white">Browse menu</Link>
+        <div className="rounded-2xl border border-[#E2E1D0] bg-white p-12 text-center shadow-card">
+          <ShoppingBag className="mx-auto h-10 w-10 text-[#F2A900]" />
+          <div className="mt-3 text-base font-medium text-[#4A5568]">Your cart is empty.</div>
+          <Link to="/" className="mt-5 inline-flex rounded-xl bg-[#F2A900] px-5 py-2.5 text-xs font-extrabold text-[#1A2B4C] shadow-md hover:bg-[#E09B00] transition">
+            Browse Menu
+          </Link>
         </div>
       </AppShell>
     );
@@ -126,7 +128,7 @@ function CheckoutPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Checkout" subtitle="Just a few steps away from your meal." />
+      <PageHeader title="Checkout" subtitle="Just a few steps away from your delicious meal." />
 
       <Stepper step={step} hasDelivery={fulfillment === "delivery"} />
 
@@ -135,8 +137,8 @@ function CheckoutPage() {
           {step === 1 && (
             <Card title="How would you like to receive your order?">
               <div className="grid gap-3 sm:grid-cols-2">
-                <FulfillmentOption active={fulfillment === "delivery"} onClick={() => setFulfillment("delivery")} icon={Truck} title="Delivery" desc="We'll bring it to your hostel." />
-                <FulfillmentOption active={fulfillment === "pickup"} onClick={() => setFulfillment("pickup")} icon={Store} title="Pickup" desc="Skip the fee. Grab it hot." />
+                <FulfillmentOption active={fulfillment === "delivery"} onClick={() => setFulfillment("delivery")} icon={Truck} title="Delivery" desc="We'll bring it directly to your hostel." />
+                <FulfillmentOption active={fulfillment === "pickup"} onClick={() => setFulfillment("pickup")} icon={Store} title="Pickup" desc="Skip the fee. Grab it hot from kitchen." />
               </div>
             </Card>
           )}
@@ -155,8 +157,8 @@ function CheckoutPage() {
           {step === 3 && (
             <>
               <Card title="Payment details">
-                <div className="mb-3 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 p-3 text-xs text-accent">
-                  <CreditCard className="h-4 w-4" /> Demo checkout — no real charge is made.
+                <div className="mb-4 flex items-center gap-2 rounded-xl border border-[#F2A900]/40 bg-[#F2A900]/10 p-3 text-xs font-bold text-[#1A2B4C]">
+                  <CreditCard className="h-4 w-4 text-[#F2A900]" /> Demo checkout — no real card charge will be made.
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Cardholder name" value={card.name} onChange={(v) => setCard({ ...card, name: v })} error={errors.name} className="sm:col-span-2" />
@@ -167,47 +169,47 @@ function CheckoutPage() {
               </Card>
 
               <Card title="Review your order">
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-sm font-medium">
                   {items.map((i) => (
-                    <div key={i.key} className="flex justify-between">
-                      <span>{i.quantity} × {i.name} <span className="text-[11px] text-muted-foreground">({i.customizations.size})</span></span>
-                      <span className="font-semibold">{formatNaira(i.unit_price * i.quantity)}</span>
+                    <div key={i.key} className="flex justify-between text-[#1A2B4C]">
+                      <span>{i.quantity} × {i.name} <span className="text-xs text-[#4A5568]">({i.customizations.size})</span></span>
+                      <span className="font-bold text-[#DC2626]">{formatNaira(i.unit_price * i.quantity)}</span>
                     </div>
                   ))}
                 </div>
-                <Link to="/cart" className="mt-3 inline-block text-xs text-accent hover:underline">Edit cart</Link>
+                <Link to="/cart" className="mt-3 inline-block text-xs font-bold text-[#F2A900] hover:underline">Edit cart</Link>
               </Card>
             </>
           )}
 
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             {step > 1 ? (
-              <button onClick={() => setStep(step === 3 && fulfillment === "pickup" ? 1 : step - 1)} className="rounded-xl border border-border/60 bg-white/5 px-4 py-2.5 text-sm font-semibold hover:bg-white/10">
+              <button onClick={() => setStep(step === 3 && fulfillment === "pickup" ? 1 : step - 1)} className="rounded-xl border border-[#E2E1D0] bg-white px-5 py-2.5 text-xs font-bold text-[#1A2B4C] hover:bg-[#F3F2DF]">
                 Back
               </button>
             ) : <div />}
             {step < 3 ? (
-              <button onClick={next} className="rounded-xl gradient-hero px-6 py-2.5 text-sm font-semibold text-white shadow-glow">
+              <button onClick={next} className="rounded-xl bg-[#F2A900] px-6 py-3 text-sm font-extrabold text-[#1A2B4C] shadow-md hover:bg-[#E09B00] transition active:scale-95">
                 Continue
               </button>
             ) : (
-              <button onClick={place} disabled={placing} className="rounded-xl gradient-hero px-6 py-2.5 text-sm font-semibold text-white shadow-glow disabled:opacity-60">
+              <button onClick={place} disabled={placing} className="rounded-xl bg-[#F2A900] px-7 py-3 text-sm font-extrabold text-[#1A2B4C] shadow-md hover:bg-[#E09B00] transition active:scale-95 disabled:opacity-60">
                 {placing ? "Placing..." : `Pay ${formatNaira(total)}`}
               </button>
             )}
           </div>
         </div>
 
-        <aside className="h-fit rounded-2xl border border-border/60 bg-card p-5">
-          <div className="font-display text-lg font-bold">Summary</div>
-          <div className="mt-4 space-y-2 text-sm">
+        <aside className="h-fit rounded-2xl border border-[#E2E1D0] bg-white p-6 shadow-card">
+          <div className="font-display text-lg font-black text-[#1A2B4C]">Summary</div>
+          <div className="mt-4 space-y-2 text-sm font-medium">
             <Row label="Subtotal" value={formatNaira(subtotal)} />
             <Row label="Delivery" value={formatNaira(delivery)} />
             <Row label="VAT (7.5%)" value={formatNaira(tax)} />
           </div>
-          <div className="mt-4 border-t border-border/60 pt-4 flex justify-between">
-            <div className="font-display font-bold">Total</div>
-            <div className="font-display text-xl font-black text-accent">{formatNaira(total)}</div>
+          <div className="mt-4 border-t border-[#E2E1D0] pt-4 flex justify-between items-center">
+            <div className="font-display font-black text-[#1A2B4C]">Total</div>
+            <div className="font-display text-2xl font-black text-[#DC2626]">{formatNaira(total)}</div>
           </div>
         </aside>
       </div>
@@ -220,17 +222,17 @@ function Stepper({ step, hasDelivery }: { step: number; hasDelivery: boolean }) 
     ? [{ n: 1, l: "Fulfillment", icon: Truck }, { n: 2, l: "Address", icon: MapPin }, { n: 3, l: "Payment", icon: CreditCard }]
     : [{ n: 1, l: "Fulfillment", icon: Store }, { n: 3, l: "Payment", icon: CreditCard }];
   return (
-    <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card p-3">
+    <div className="flex items-center gap-2 rounded-2xl border border-[#E2E1D0] bg-white p-3 shadow-card">
       {steps.map((s, idx) => {
         const active = step === s.n;
         const done = step > s.n;
         return (
           <div key={s.n} className="flex flex-1 items-center gap-2">
-            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold ${done ? "gradient-hero text-white" : active ? "bg-primary/20 text-foreground ring-2 ring-primary" : "bg-white/5 text-muted-foreground"}`}>
+            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold ${done ? "bg-[#F2A900] text-[#1A2B4C]" : active ? "bg-[#F2A900]/20 text-[#1A2B4C] ring-2 ring-[#F2A900]" : "bg-[#FAFAED] text-[#4A5568]"}`}>
               {done ? <Check className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
             </div>
-            <div className="hidden text-xs font-semibold sm:block">{s.l}</div>
-            {idx < steps.length - 1 && <div className={`h-0.5 flex-1 rounded-full ${done ? "bg-primary" : "bg-white/10"}`} />}
+            <div className="hidden text-xs font-bold text-[#1A2B4C] sm:block">{s.l}</div>
+            {idx < steps.length - 1 && <div className={`h-0.5 flex-1 rounded-full ${done ? "bg-[#F2A900]" : "bg-[#E2E1D0]"}`} />}
           </div>
         );
       })}
@@ -240,8 +242,8 @@ function Stepper({ step, hasDelivery }: { step: number; hasDelivery: boolean }) 
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5">
-      <div className="mb-4 font-display text-lg font-bold">{title}</div>
+    <div className="rounded-2xl border border-[#E2E1D0] bg-white p-6 shadow-card">
+      <div className="mb-4 font-display text-lg font-black text-[#1A2B4C]">{title}</div>
       {children}
     </div>
   );
@@ -249,10 +251,10 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function FulfillmentOption({ active, onClick, icon: Icon, title, desc }: { active: boolean; onClick: () => void; icon: typeof Truck; title: string; desc: string }) {
   return (
-    <button onClick={onClick} className={`rounded-2xl border p-4 text-left transition ${active ? "border-primary bg-primary/15 shadow-glow" : "border-border/60 bg-white/5 hover:bg-white/10"}`}>
-      <Icon className="h-5 w-5 text-accent" />
-      <div className="mt-2 font-display font-bold">{title}</div>
-      <div className="text-xs text-muted-foreground">{desc}</div>
+    <button onClick={onClick} className={`rounded-2xl border p-4 text-left transition ${active ? "border-[#F2A900] bg-[#F2A900]/15 shadow-md" : "border-[#E2E1D0] bg-white hover:bg-[#F3F2DF]"}`}>
+      <Icon className="h-5 w-5 text-[#F2A900]" />
+      <div className="mt-2 font-display font-black text-[#1A2B4C]">{title}</div>
+      <div className="text-xs font-medium text-[#4A5568]">{desc}</div>
     </button>
   );
 }
@@ -260,18 +262,18 @@ function FulfillmentOption({ active, onClick, icon: Icon, title, desc }: { activ
 function Field({ label, value, onChange, placeholder, error, className }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; error?: string; className?: string }) {
   return (
     <label className={`block ${className ?? ""}`}>
-      <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="text-xs font-extrabold uppercase tracking-wider text-[#1A2B4C]">{label}</div>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`mt-1.5 h-10 w-full rounded-xl border bg-white/5 px-3 text-sm focus:outline-none focus:ring-2 ${error ? "border-destructive focus:ring-destructive/40" : "border-border/60 focus:border-primary/60 focus:ring-primary/30"}`}
+        className={`mt-1.5 h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-[#1A2B4C] placeholder-slate-400 focus:outline-none focus:ring-2 ${error ? "border-red-500 focus:ring-red-300" : "border-[#E2E1D0] focus:border-[#F2A900] focus:ring-[#F2A900]/30"}`}
       />
-      {error && <div className="mt-1 text-[11px] text-destructive">{error}</div>}
+      {error && <div className="mt-1 text-xs font-semibold text-red-500">{error}</div>}
     </label>
   );
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between text-muted-foreground"><span>{label}</span><span className="text-foreground">{value}</span></div>;
+  return <div className="flex justify-between text-[#4A5568]"><span>{label}</span><span className="text-[#1A2B4C] font-bold">{value}</span></div>;
 }
