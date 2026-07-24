@@ -180,21 +180,8 @@ function CheckoutPage() {
                     </div>
                   ))}
                 </div>
-                
-                {pointsAvailable > 0 && (
-                  <div className="mt-4 rounded-xl border border-[#F2A900]/40 bg-[#F2A900]/10 p-4">
-                    <label className="flex cursor-pointer items-start gap-3">
-                      <div className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border transition ${applyPoints ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-[#E2E1D0] bg-white"}`}>
-                        {applyPoints && <Check className="h-3 w-3" strokeWidth={4} />}
-                      </div>
-                      <input type="checkbox" className="sr-only" checked={applyPoints} onChange={(e) => setApplyPoints(e.target.checked)} />
-                      <div>
-                        <div className="font-bold text-[#1A2B4C]">Use Loyalty Points</div>
-                        <div className="text-xs font-medium text-[#4A5568]">You have {pointsAvailable} points. Use them to save {formatNaira(Math.min(pointsAvailable, preDiscountTotal))}.</div>
-                      </div>
-                    </label>
-                  </div>
-                )}
+
+
                 
                 <Link to="/cart" className="mt-3 inline-block text-xs font-bold text-[#F2A900] hover:underline">Edit cart</Link>
               </Card>
