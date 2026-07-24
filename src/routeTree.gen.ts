@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OrdersRouteImport } from './routes/orders'
-import { Route as LoyaltyRouteImport } from './routes/loyalty'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -33,11 +32,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoyaltyRoute = LoyaltyRouteImport.update({
-  id: '/loyalty',
-  path: '/loyalty',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -108,7 +102,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
-  '/loyalty': typeof LoyaltyRoute
   '/orders': typeof OrdersRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -124,7 +117,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
-  '/loyalty': typeof LoyaltyRoute
   '/orders': typeof OrdersRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -142,7 +134,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
-  '/loyalty': typeof LoyaltyRoute
   '/orders': typeof OrdersRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -161,7 +152,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
-    | '/loyalty'
     | '/orders'
     | '/reset-password'
     | '/admin/categories'
@@ -177,7 +167,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
-    | '/loyalty'
     | '/orders'
     | '/reset-password'
     | '/admin/categories'
@@ -194,7 +183,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
-    | '/loyalty'
     | '/orders'
     | '/reset-password'
     | '/admin/categories'
@@ -212,7 +200,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
-  LoyaltyRoute: typeof LoyaltyRoute
   OrdersRoute: typeof OrdersRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   DishIdRoute: typeof DishIdRoute
@@ -233,13 +220,6 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/loyalty': {
-      id: '/loyalty'
-      path: '/loyalty'
-      fullPath: '/loyalty'
-      preLoaderRoute: typeof LoyaltyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -352,7 +332,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
-  LoyaltyRoute: LoyaltyRoute,
   OrdersRoute: OrdersRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   DishIdRoute: DishIdRoute,
