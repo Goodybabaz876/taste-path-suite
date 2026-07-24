@@ -277,14 +277,83 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_admin_sales_analytics: {
+        Args: never
+        Returns: {
+          item_count: number
+          month: string
+          month_start: string
+          order_count: number
+          revenue: number
+        }[]
+      }
+      get_admin_top_customers: {
+        Args: never
+        Returns: {
+          email: string
+          favorite_item: string
+          order_count: number
+          total_spent: number
+        }[]
+      }
+      get_admin_top_items: {
+        Args: never
+        Returns: {
+          name: string
+          qty: number
+          revenue: number
+        }[]
+      }
+      get_admin_transactions: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          item_count: number
+          items: Json
+          status: string
+          top_item: string
+          total: number
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      app_role: "admin" | "user"
       fulfillment_type: "delivery" | "pickup"
       order_status:
         | "placed"
@@ -419,6 +488,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       fulfillment_type: ["delivery", "pickup"],
       order_status: [
         "placed",
