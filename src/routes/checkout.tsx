@@ -35,25 +35,11 @@ function CheckoutPage() {
   const [card, setCard] = useState({ number: "", exp: "", cvc: "", name: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [placing, setPlacing] = useState(false);
-  const [applyPoints, setApplyPoints] = useState(false);
-
-  const profile = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("loyalty_points").eq("id", user!.id).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
 
   const delivery = fulfillment === "delivery" && subtotal > 0 ? 1000 : 0;
   const tax = Math.round(subtotal * 0.075);
-  const preDiscountTotal = subtotal + delivery + tax;
-  
-  const pointsAvailable = profile.data?.loyalty_points ?? 0;
-  const pointsDiscount = applyPoints ? Math.min(pointsAvailable, preDiscountTotal) : 0;
-  const total = preDiscountTotal - pointsDiscount;
+  const total = subtotal + delivery + tax;
+
 
   if (items.length === 0) {
     return (
