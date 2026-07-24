@@ -97,8 +97,8 @@ function CheckoutPage() {
           subtotal,
           delivery_fee: delivery,
           tax,
-          points_discount: pointsDiscount,
           total,
+
           delivery_address: fulfillment === "delivery" ? address : null,
           estimated_ready_at: eta,
         })
