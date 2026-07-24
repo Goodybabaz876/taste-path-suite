@@ -74,6 +74,41 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_transactions: {
+        Row: {
+          id: string
+          user_id: string
+          order_id: string | null
+          points: number
+          type: Database["public"]["Enums"]["loyalty_transaction_type"]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          order_id?: string | null
+          points: number
+          type: Database["public"]["Enums"]["loyalty_transaction_type"]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          order_id?: string | null
+          points?: number
+          type?: Database["public"]["Enums"]["loyalty_transaction_type"]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           category_id: string
@@ -183,6 +218,7 @@ export type Database = {
           estimated_ready_at: string | null
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
+          points_discount: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
@@ -197,6 +233,7 @@ export type Database = {
           estimated_ready_at?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
+          points_discount?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax?: number
@@ -211,6 +248,7 @@ export type Database = {
           estimated_ready_at?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
+          points_discount?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
@@ -258,6 +296,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          loyalty_points: number
           phone: string | null
           updated_at: string
         }
@@ -265,6 +304,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          loyalty_points?: number
           phone?: string | null
           updated_at?: string
         }
@@ -272,6 +312,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          loyalty_points?: number
           phone?: string | null
           updated_at?: string
         }
@@ -282,10 +323,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_admin_transactions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          status: string
+          total: number
+          created_at: string
+          email: string
+          item_count: number
+          items: Json
+        }[]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       fulfillment_type: "delivery" | "pickup"
+      loyalty_transaction_type: "earn" | "spend" | "admin_adjustment"
       order_status:
         | "placed"
         | "preparing"

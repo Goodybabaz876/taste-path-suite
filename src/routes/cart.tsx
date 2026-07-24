@@ -33,17 +33,35 @@ function CartPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-display font-black text-[#1A2B4C] text-base">{i.name}</div>
-                    <button onClick={() => remove(i.key)} className="text-slate-400 hover:text-[#DC2626] transition"><Trash2 className="h-4 w-4" /></button>
+                    <button
+                      onClick={() => remove(i.key)}
+                      aria-label={`Remove ${i.name} from cart`}
+                      className="text-slate-400 hover:text-[#DC2626] transition"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </button>
                   </div>
                   <div className="mt-1 text-xs font-medium text-[#4A5568]">
                     {[i.customizations.size, i.customizations.protein, i.customizations.spice, i.customizations.side !== "None" && `+${i.customizations.side}`].filter(Boolean).join(" · ")}
                   </div>
                   {i.customizations.notes && <div className="mt-1 text-[11px] italic text-[#4A5568]">"{i.customizations.notes}"</div>}
                   <div className="mt-3 flex items-center gap-3">
-                    <div className="flex items-center gap-2 rounded-lg border border-[#E2E1D0] bg-[#FAFAED] p-1">
-                      <button onClick={() => updateQty(i.key, i.quantity - 1)} className="grid h-6 w-6 place-items-center rounded hover:bg-[#E2E1D0] text-[#1A2B4C] font-bold"><Minus className="h-3 w-3" /></button>
-                      <span className="min-w-4 text-center text-xs font-black text-[#1A2B4C]">{i.quantity}</span>
-                      <button onClick={() => updateQty(i.key, i.quantity + 1)} className="grid h-6 w-6 place-items-center rounded hover:bg-[#E2E1D0] text-[#1A2B4C] font-bold"><Plus className="h-3 w-3" /></button>
+                    <div className="flex items-center gap-2 rounded-lg border border-[#E2E1D0] bg-[#FAFAED] p-1" role="group" aria-label={`Quantity for ${i.name}`}>
+                      <button
+                        onClick={() => updateQty(i.key, i.quantity - 1)}
+                        aria-label={`Decrease quantity of ${i.name}`}
+                        className="grid h-6 w-6 place-items-center rounded hover:bg-[#E2E1D0] text-[#1A2B4C] font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F2A900]"
+                      >
+                        <Minus className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                      <span className="min-w-4 text-center text-xs font-black text-[#1A2B4C]" aria-live="polite" aria-atomic="true">{i.quantity}</span>
+                      <button
+                        onClick={() => updateQty(i.key, i.quantity + 1)}
+                        aria-label={`Increase quantity of ${i.name}`}
+                        className="grid h-6 w-6 place-items-center rounded hover:bg-[#E2E1D0] text-[#1A2B4C] font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F2A900]"
+                      >
+                        <Plus className="h-3 w-3" aria-hidden="true" />
+                      </button>
                     </div>
                     <div className="ml-auto font-display font-black text-[#DC2626] text-lg">{formatNaira(i.unit_price * i.quantity)}</div>
                   </div>

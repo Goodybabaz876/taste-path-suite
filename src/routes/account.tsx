@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ export const Route = createFileRoute("/account")({ component: AccountPage });
 function AccountPage() {
   const { user, loading } = useAuth();
   const qc = useQueryClient();
+  const nav = useNavigate();
 
   const profile = useQuery({
     queryKey: ["profile", user?.id],
@@ -78,7 +79,7 @@ function AccountPage() {
     await supabase.from("payment_methods").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["payments"] });
   };
-  const signOut = async () => { await supabase.auth.signOut(); toast.success("Signed out"); };
+  const signOut = async () => { await supabase.auth.signOut(); toast.success("Signed out"); nav({ to: "/auth" }); };
 
   return (
     <AppShell>

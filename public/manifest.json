@@ -1,0 +1,17 @@
+{
+  "name": "ELIZADE FOODS",
+  "short_name": "Elizade",
+  "description": "Order Jollof, Egusi, Suya and more from the comfort of your hostel.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E1B31",
+  "theme_color": "#F2A900",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

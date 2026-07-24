@@ -100,24 +100,27 @@ function MenuPage() {
       <section className="sticky top-0 z-20 -mx-4 mt-6 border-b border-[#E2E1D0] bg-[#FAFAED]/90 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search Jollof, Suya, Egusi…"
+              aria-label="Search menu items"
               className="h-11 w-full rounded-xl border border-[#E2E1D0] bg-white pl-10 pr-4 text-sm text-[#1A2B4C] placeholder-slate-400 shadow-sm focus:border-[#F2A900] focus:outline-none focus:ring-2 focus:ring-[#F2A900]/30"
             />
           </div>
           <button
             onClick={() => setShowFilters((s) => !s)}
-            className="flex items-center gap-2 rounded-xl border border-[#E2E1D0] bg-white px-4 py-2.5 text-xs font-bold text-[#1A2B4C] shadow-sm hover:bg-[#F3F2DF] transition"
+            aria-expanded={showFilters}
+            aria-controls="filter-panel"
+            className="flex items-center gap-2 rounded-xl border border-[#E2E1D0] bg-white px-4 py-2.5 text-xs font-bold text-[#1A2B4C] shadow-sm hover:bg-[#F3F2DF] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F2A900]"
           >
-            <Filter className="h-4 w-4 text-[#1A2B4C]" /> Filters
+            <Filter className="h-4 w-4 text-[#1A2B4C]" aria-hidden="true" /> Filters
           </button>
         </div>
 
         {showFilters && (
-          <div className="mt-4 grid gap-4 rounded-2xl border border-[#E2E1D0] bg-white p-5 shadow-card sm:grid-cols-3">
+          <div id="filter-panel" className="mt-4 grid gap-4 rounded-2xl border border-[#E2E1D0] bg-white p-5 shadow-card sm:grid-cols-3">
             <div>
               <label className="text-xs font-bold text-[#1A2B4C]">Max price: <span className="text-[#DC2626] font-black">{formatNaira(maxPrice)}</span></label>
               <input type="range" min={500} max={10000} step={500} value={maxPrice} onChange={(e) => setMaxPrice(+e.target.value)} className="mt-2 w-full accent-[#F2A900]" />
@@ -149,7 +152,7 @@ function MenuPage() {
         )}
 
         {/* Category tabs */}
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div role="tablist" aria-label="Menu categories" className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <CatTab active={activeCat === "all"} onClick={() => setActiveCat("all")}>All Menu</CatTab>
           {cats.data?.map((c) => (
             <CatTab key={c.id} active={activeCat === c.id} onClick={() => setActiveCat(c.id)}>{c.name}</CatTab>
@@ -190,8 +193,10 @@ function MenuPage() {
 function CatTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
+      role="tab"
+      aria-pressed={active}
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition shadow-sm ${
+      className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2A900] ${
         active
           ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C] shadow-md"
           : "border-[#E2E1D0] bg-white text-[#4A5568] hover:bg-[#F3F2DF] hover:text-[#1A2B4C]"

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Check, CreditCard, MapPin, Truck, Store, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
@@ -34,10 +35,25 @@ function CheckoutPage() {
   const [card, setCard] = useState({ number: "", exp: "", cvc: "", name: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [placing, setPlacing] = useState(false);
+  const [applyPoints, setApplyPoints] = useState(false);
+
+  const profile = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles").select("loyalty_points").eq("id", user!.id).single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const delivery = fulfillment === "delivery" && subtotal > 0 ? 1000 : 0;
   const tax = Math.round(subtotal * 0.075);
-  const total = subtotal + delivery + tax;
+  const preDiscountTotal = subtotal + delivery + tax;
+  
+  const pointsAvailable = profile.data?.loyalty_points ?? 0;
+  const pointsDiscount = applyPoints ? Math.min(pointsAvailable, preDiscountTotal) : 0;
+  const total = preDiscountTotal - pointsDiscount;
 
   if (items.length === 0) {
     return (
@@ -95,6 +111,7 @@ function CheckoutPage() {
           subtotal,
           delivery_fee: delivery,
           tax,
+          points_discount: pointsDiscount,
           total,
           delivery_address: fulfillment === "delivery" ? address : null,
           estimated_ready_at: eta,
@@ -177,6 +194,22 @@ function CheckoutPage() {
                     </div>
                   ))}
                 </div>
+                
+                {pointsAvailable > 0 && (
+                  <div className="mt-4 rounded-xl border border-[#F2A900]/40 bg-[#F2A900]/10 p-4">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <div className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border transition ${applyPoints ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-[#E2E1D0] bg-white"}`}>
+                        {applyPoints && <Check className="h-3 w-3" strokeWidth={4} />}
+                      </div>
+                      <input type="checkbox" className="sr-only" checked={applyPoints} onChange={(e) => setApplyPoints(e.target.checked)} />
+                      <div>
+                        <div className="font-bold text-[#1A2B4C]">Use Loyalty Points</div>
+                        <div className="text-xs font-medium text-[#4A5568]">You have {pointsAvailable} points. Use them to save {formatNaira(Math.min(pointsAvailable, preDiscountTotal))}.</div>
+                      </div>
+                    </label>
+                  </div>
+                )}
+                
                 <Link to="/cart" className="mt-3 inline-block text-xs font-bold text-[#F2A900] hover:underline">Edit cart</Link>
               </Card>
             </>
@@ -184,16 +217,26 @@ function CheckoutPage() {
 
           <div className="flex justify-between items-center">
             {step > 1 ? (
-              <button onClick={() => setStep(step === 3 && fulfillment === "pickup" ? 1 : step - 1)} className="rounded-xl border border-[#E2E1D0] bg-white px-5 py-2.5 text-xs font-bold text-[#1A2B4C] hover:bg-[#F3F2DF]">
+              <button
+                onClick={() => setStep(step === 3 && fulfillment === "pickup" ? 1 : step - 1)}
+                className="rounded-xl border border-[#E2E1D0] bg-white px-5 py-2.5 text-xs font-bold text-[#1A2B4C] hover:bg-[#F3F2DF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F2A900]"
+              >
                 Back
               </button>
             ) : <div />}
             {step < 3 ? (
-              <button onClick={next} className="rounded-xl bg-[#F2A900] px-6 py-3 text-sm font-extrabold text-[#1A2B4C] shadow-md hover:bg-[#E09B00] transition active:scale-95">
+              <button
+                onClick={next}
+                className="rounded-xl bg-[#F2A900] px-6 py-3 text-sm font-extrabold text-[#1A2B4C] shadow-md hover:bg-[#E09B00] transition active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A2B4C]"
+              >
                 Continue
               </button>
             ) : (
-              <button onClick={place} disabled={placing} className="rounded-xl bg-[#F2A900] px-7 py-3 text-sm font-extrabold text-[#1A2B4C] shadow-md hover:bg-[#E09B00] transition active:scale-95 disabled:opacity-60">
+              <button
+                onClick={place}
+                disabled={placing}
+                className="rounded-xl bg-[#F2A900] px-7 py-3 text-sm font-extrabold text-[#1A2B4C] shadow-md hover:bg-[#E09B00] transition active:scale-95 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A2B4C]"
+              >
                 {placing ? "Placing..." : `Pay ${formatNaira(total)}`}
               </button>
             )}
@@ -206,6 +249,9 @@ function CheckoutPage() {
             <Row label="Subtotal" value={formatNaira(subtotal)} />
             <Row label="Delivery" value={formatNaira(delivery)} />
             <Row label="VAT (7.5%)" value={formatNaira(tax)} />
+            {pointsDiscount > 0 && (
+              <Row label="Points Discount" value={`-${formatNaira(pointsDiscount)}`} className="text-emerald-600" />
+            )}
           </div>
           <div className="mt-4 border-t border-[#E2E1D0] pt-4 flex justify-between items-center">
             <div className="font-display font-black text-[#1A2B4C]">Total</div>
@@ -251,8 +297,13 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function FulfillmentOption({ active, onClick, icon: Icon, title, desc }: { active: boolean; onClick: () => void; icon: typeof Truck; title: string; desc: string }) {
   return (
-    <button onClick={onClick} className={`rounded-2xl border p-4 text-left transition ${active ? "border-[#F2A900] bg-[#F2A900]/15 shadow-md" : "border-[#E2E1D0] bg-white hover:bg-[#F3F2DF]"}`}>
-      <Icon className="h-5 w-5 text-[#F2A900]" />
+    <button
+      role="radio"
+      aria-checked={active}
+      onClick={onClick}
+      className={`rounded-2xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2A900] ${active ? "border-[#F2A900] bg-[#F2A900]/15 shadow-md" : "border-[#E2E1D0] bg-white hover:bg-[#F3F2DF]"}`}
+    >
+      <Icon className="h-5 w-5 text-[#F2A900]" aria-hidden="true" />
       <div className="mt-2 font-display font-black text-[#1A2B4C]">{title}</div>
       <div className="text-xs font-medium text-[#4A5568]">{desc}</div>
     </button>
@@ -260,20 +311,25 @@ function FulfillmentOption({ active, onClick, icon: Icon, title, desc }: { activ
 }
 
 function Field({ label, value, onChange, placeholder, error, className }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; error?: string; className?: string }) {
+  const id = label.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const errId = `${id}-error`;
   return (
-    <label className={`block ${className ?? ""}`}>
-      <div className="text-xs font-extrabold uppercase tracking-wider text-[#1A2B4C]">{label}</div>
+    <div className={`block ${className ?? ""}`}>
+      <label htmlFor={id} className="text-xs font-extrabold uppercase tracking-wider text-[#1A2B4C]">{label}</label>
       <input
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`mt-1.5 h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-[#1A2B4C] placeholder-slate-400 focus:outline-none focus:ring-2 ${error ? "border-red-500 focus:ring-red-300" : "border-[#E2E1D0] focus:border-[#F2A900] focus:ring-[#F2A900]/30"}`}
+        aria-invalid={!!error}
+        aria-describedby={error ? errId : undefined}
+        className={`mt-1.5 h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-[#1A2B4C] placeholder-slate-400 focus:outline-none focus:ring-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F2A900] ${error ? "border-red-500 focus:ring-red-300" : "border-[#E2E1D0] focus:border-[#F2A900] focus:ring-[#F2A900]/30"}`}
       />
-      {error && <div className="mt-1 text-xs font-semibold text-red-500">{error}</div>}
-    </label>
+      {error && <div id={errId} role="alert" className="mt-1 text-xs font-semibold text-red-500">{error}</div>}
+    </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between text-[#4A5568]"><span>{label}</span><span className="text-[#1A2B4C] font-bold">{value}</span></div>;
+function Row({ label, value, className }: { label: string; value: string; className?: string }) {
+  return <div className="flex justify-between text-[#4A5568]"><span>{label}</span><span className={`font-bold ${className ?? "text-[#1A2B4C]"}`}>{value}</span></div>;
 }
