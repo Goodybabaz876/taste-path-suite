@@ -5,7 +5,21 @@ import { toast } from "sonner";
 import { Search, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatNaira } from "@/lib/format";
-import { StatusBadge } from "./index";
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    placed: "bg-slate-500/20 text-slate-500",
+    preparing: "bg-amber-500/20 text-amber-600",
+    out_for_delivery: "bg-blue-500/20 text-blue-600",
+    delivered: "bg-emerald-500/20 text-emerald-600",
+    cancelled: "bg-red-500/20 text-red-600",
+  };
+  return (
+    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${map[status] ?? "bg-slate-100 text-slate-800"}`}>
+      {status.replace(/_/g, " ")}
+    </span>
+  );
+}
+
 
 export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
 

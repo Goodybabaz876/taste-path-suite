@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Flame, ShoppingBag, User, Utensils, ClipboardList, LogIn, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { Flame, ShoppingBag, User, Utensils, ClipboardList, LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
@@ -11,9 +11,9 @@ const NAV = [
   { to: "/", label: "Menu", icon: Utensils },
   { to: "/cart", label: "Cart", icon: ShoppingBag },
   { to: "/orders", label: "My Orders", icon: ClipboardList },
-  { to: "/loyalty", label: "Rewards", icon: Sparkles },
   { to: "/account", label: "Account", icon: User },
 ];
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { count } = useCart();

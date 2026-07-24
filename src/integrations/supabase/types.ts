@@ -74,41 +74,6 @@ export type Database = {
         }
         Relationships: []
       }
-      loyalty_transactions: {
-        Row: {
-          id: string
-          user_id: string
-          order_id: string | null
-          points: number
-          type: Database["public"]["Enums"]["loyalty_transaction_type"]
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          order_id?: string | null
-          points: number
-          type: Database["public"]["Enums"]["loyalty_transaction_type"]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          order_id?: string | null
-          points?: number
-          type?: Database["public"]["Enums"]["loyalty_transaction_type"]
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loyalty_transactions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       menu_items: {
         Row: {
           category_id: string
@@ -218,7 +183,6 @@ export type Database = {
           estimated_ready_at: string | null
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
-          points_discount: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
@@ -233,7 +197,6 @@ export type Database = {
           estimated_ready_at?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
-          points_discount?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax?: number
@@ -248,7 +211,6 @@ export type Database = {
           estimated_ready_at?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
-          points_discount?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
@@ -296,7 +258,6 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
-          loyalty_points: number
           phone: string | null
           updated_at: string
         }
@@ -304,7 +265,6 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
-          loyalty_points?: number
           phone?: string | null
           updated_at?: string
         }
@@ -312,9 +272,29 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
-          loyalty_points?: number
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -323,26 +303,58 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_admin_transactions: {
-        Args: Record<PropertyKey, never>
+      get_admin_sales_analytics: {
+        Args: never
         Returns: {
-          id: string
-          status: string
-          total: number
-          created_at: string
-          email: string
           item_count: number
-          items: Json
+          month: string
+          month_start: string
+          order_count: number
+          revenue: number
         }[]
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
+      get_admin_top_customers: {
+        Args: never
+        Returns: {
+          email: string
+          favorite_item: string
+          order_count: number
+          total_spent: number
+        }[]
+      }
+      get_admin_top_items: {
+        Args: never
+        Returns: {
+          name: string
+          qty: number
+          revenue: number
+        }[]
+      }
+      get_admin_transactions: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          item_count: number
+          items: Json
+          status: string
+          top_item: string
+          total: number
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      app_role: "admin" | "user"
       fulfillment_type: "delivery" | "pickup"
-      loyalty_transaction_type: "earn" | "spend" | "admin_adjustment"
       order_status:
         | "placed"
         | "preparing"
@@ -476,6 +488,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       fulfillment_type: ["delivery", "pickup"],
       order_status: [
         "placed",
