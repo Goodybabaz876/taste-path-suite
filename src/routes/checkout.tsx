@@ -1,14 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { Check, CreditCard, MapPin, Truck, Store, ShoppingBag } from "lucide-react";
+import { CreditCard, MapPin, Truck, Store, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { useCart } from "@/lib/cart";
 import { formatNaira } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+
 
 export const Route = createFileRoute("/checkout")({ component: CheckoutPage });
 
