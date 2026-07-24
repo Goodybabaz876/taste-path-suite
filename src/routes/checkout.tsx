@@ -222,9 +222,8 @@ function CheckoutPage() {
             <Row label="Subtotal" value={formatNaira(subtotal)} />
             <Row label="Delivery" value={formatNaira(delivery)} />
             <Row label="VAT (7.5%)" value={formatNaira(tax)} />
-            {pointsDiscount > 0 && (
-              <Row label="Points Discount" value={`-${formatNaira(pointsDiscount)}`} className="text-emerald-600" />
-            )}
+
+
           </div>
           <div className="mt-4 border-t border-[#E2E1D0] pt-4 flex justify-between items-center">
             <div className="font-display font-black text-[#1A2B4C]">Total</div>
