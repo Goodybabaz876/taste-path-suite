@@ -1,14 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Flame, ShoppingBag, User, Utensils, ClipboardList, LogIn, LogOut, ShieldCheck } from "lucide-react";
+import { Flame, ShoppingBag, User, ChefHat, ClipboardList, LogIn, LogOut } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/hooks/use-auth";
-import { useAdmin } from "@/hooks/use-admin";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { to: "/", label: "Menu", icon: Utensils },
+  { to: "/", label: "Kitchens", icon: ChefHat },
   { to: "/cart", label: "Cart", icon: ShoppingBag },
   { to: "/orders", label: "My Orders", icon: ClipboardList },
   { to: "/account", label: "Account", icon: User },
@@ -18,7 +17,6 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { count } = useCart();
   const { user } = useAuth();
-  const { isAdmin } = useAdmin();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const nav = useNavigate();
 
@@ -73,23 +71,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
 
-          {/* Admin link — only visible to admins */}
-          {isAdmin && (
-            <>
-              <div className="px-3 pb-2 pt-4 text-[11px] font-black uppercase tracking-widest text-[#F2A900]/70">Admin</div>
-              <Link
-                to="/admin"
-                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-extrabold transition ${
-                  pathname.startsWith("/admin")
-                    ? "bg-[#F2A900] text-[#1A2B4C] shadow-md"
-                    : "text-slate-300 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <ShieldCheck className={`h-4 w-4 ${pathname.startsWith("/admin") ? "text-[#1A2B4C]" : "text-[#F2A900]"}`} />
-                Admin Panel
-              </Link>
-            </>
-          )}
         </nav>
 
         <div className="m-4 rounded-2xl border border-[#F2A900]/30 bg-[#1A2B4C]/80 p-4">

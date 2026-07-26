@@ -50,6 +50,30 @@ export type Database = {
         }
         Relationships: []
       }
+      kitchens: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -183,6 +207,7 @@ export type Database = {
           estimated_ready_at: string | null
           fulfillment: Database["public"]["Enums"]["fulfillment_type"]
           id: string
+          kitchen_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
@@ -197,6 +222,7 @@ export type Database = {
           estimated_ready_at?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
+          kitchen_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax?: number
@@ -211,6 +237,7 @@ export type Database = {
           estimated_ready_at?: string | null
           fulfillment?: Database["public"]["Enums"]["fulfillment_type"]
           id?: string
+          kitchen_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
@@ -218,7 +245,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_kitchen_id_fkey"
+            columns: ["kitchen_id"]
+            isOneToOne: false
+            referencedRelation: "kitchens"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_methods: {
         Row: {
@@ -303,6 +338,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_kitchen_analytics: {
+        Args: never
+        Returns: {
+          item_count: number
+          kitchen_code: string
+          kitchen_id: string
+          kitchen_name: string
+          order_count: number
+          revenue: number
+          top_item: string
+        }[]
+      }
+      get_admin_kitchen_monthly: {
+        Args: never
+        Returns: {
+          kitchen_code: string
+          kitchen_name: string
+          month: string
+          month_start: string
+          order_count: number
+          revenue: number
+        }[]
+      }
       get_admin_sales_analytics: {
         Args: never
         Returns: {
@@ -338,6 +396,8 @@ export type Database = {
           id: string
           item_count: number
           items: Json
+          kitchen_code: string
+          kitchen_name: string
           status: string
           top_item: string
           total: number

@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { Check, CreditCard, MapPin, Truck, Store, ShoppingBag } from "lucide-react";
+import { Check, CreditCard, MapPin, Truck, Store, ShoppingBag, ChefHat } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, PageHeader } from "@/components/AppShell";
 import { useCart } from "@/lib/cart";
@@ -31,14 +32,25 @@ function CheckoutPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [fulfillment, setFulfillment] = useState<"delivery" | "pickup">("delivery");
+  const [kitchenId, setKitchenId] = useState<string>("");
   const [address, setAddress] = useState({ street: "", city: "Ondo", postal_code: "", instructions: "" });
   const [card, setCard] = useState({ number: "", exp: "", cvc: "", name: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [placing, setPlacing] = useState(false);
 
+  const kitchens = useQuery({
+    queryKey: ["kitchens"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("kitchens").select("*").order("sort_order");
+      if (error) throw error;
+      return data as { id: string; name: string; code: string }[];
+    },
+  });
+
   const delivery = fulfillment === "delivery" && subtotal > 0 ? 1000 : 0;
   const tax = Math.round(subtotal * 0.075);
   const total = subtotal + delivery + tax;
+
 
 
   if (items.length === 0) {
@@ -57,7 +69,11 @@ function CheckoutPage() {
 
   const next = () => {
     setErrors({});
-    if (step === 1) { setStep(fulfillment === "delivery" ? 2 : 3); return; }
+    if (step === 1) {
+      if (!kitchenId) { toast.error("Please choose a kitchen"); return; }
+      setStep(fulfillment === "delivery" ? 2 : 3);
+      return;
+    }
     if (step === 2) {
       const r = addressSchema.safeParse(address);
       if (!r.success) {
@@ -98,7 +114,7 @@ function CheckoutPage() {
           delivery_fee: delivery,
           tax,
           total,
-
+          kitchen_id: kitchenId,
           delivery_address: fulfillment === "delivery" ? address : null,
           estimated_ready_at: eta,
         })
@@ -138,12 +154,32 @@ function CheckoutPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           {step === 1 && (
-            <Card title="How would you like to receive your order?">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FulfillmentOption active={fulfillment === "delivery"} onClick={() => setFulfillment("delivery")} icon={Truck} title="Delivery" desc="We'll bring it directly to your hostel." />
-                <FulfillmentOption active={fulfillment === "pickup"} onClick={() => setFulfillment("pickup")} icon={Store} title="Pickup" desc="Skip the fee. Grab it hot from kitchen." />
-              </div>
-            </Card>
+            <>
+              <Card title="Choose a kitchen">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(kitchens.data ?? []).map((k) => (
+                    <button
+                      key={k.id}
+                      onClick={() => setKitchenId(k.id)}
+                      className={`rounded-2xl border p-4 text-left transition ${kitchenId === k.id ? "border-[#F2A900] bg-[#F2A900]/15 shadow-md" : "border-[#E2E1D0] bg-white hover:bg-[#F3F2DF]"}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <ChefHat className="h-5 w-5 text-[#F2A900]" />
+                        <span className="rounded-md bg-[#1A2B4C] px-1.5 py-0.5 text-[10px] font-black text-[#F2A900]">{k.code}</span>
+                      </div>
+                      <div className="mt-2 font-display font-black text-[#1A2B4C]">{k.name}</div>
+                      <div className="text-xs font-medium text-[#4A5568]">Same menu · fresh from {k.name.replace(" Kitchen", "")}</div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+              <Card title="How would you like to receive your order?">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <FulfillmentOption active={fulfillment === "delivery"} onClick={() => setFulfillment("delivery")} icon={Truck} title="Delivery" desc="We'll bring it directly to your hostel." />
+                  <FulfillmentOption active={fulfillment === "pickup"} onClick={() => setFulfillment("pickup")} icon={Store} title="Pickup" desc="Skip the fee. Grab it hot from kitchen." />
+                </div>
+              </Card>
+            </>
           )}
 
           {step === 2 && fulfillment === "delivery" && (
