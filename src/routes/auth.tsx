@@ -59,7 +59,8 @@ function AuthPage() {
         if (error) throw error;
         toast.success("Welcome back!");
       }
-      nav({ to: adminMode ? "/admin" : (redirect || "/") });
+      const { data: isAdmin } = await supabase.rpc("is_admin");
+      nav({ to: isAdmin ? "/admin" : (redirect || "/") });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Auth failed");
     } finally {
