@@ -403,6 +403,17 @@ export type Database = {
           total: number
         }[]
       }
+      get_admin_users: {
+        Args: never
+        Returns: {
+          id: string
+          email: string
+          full_name: string
+          phone: string
+          created_at: string
+          confirmed_at: string | null
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

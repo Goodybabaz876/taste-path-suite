@@ -25,6 +25,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -50,7 +51,10 @@ function AuthPage() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { data: { full_name: name }, emailRedirectTo: window.location.origin },
+          options: {
+            data: { full_name: name, phone: phone.trim() || null },
+            emailRedirectTo: window.location.origin,
+          },
         });
         if (error) throw error;
         toast.success("Account created!");
@@ -59,8 +63,13 @@ function AuthPage() {
         if (error) throw error;
         toast.success("Welcome back!");
       }
-      const { data: isAdmin } = await supabase.rpc("is_admin");
-      nav({ to: isAdmin ? "/admin" : (redirect || "/") });
+      // Only redirect to /admin if the user explicitly logged in via the admin panel
+      if (adminMode) {
+        const { data: isAdmin } = await supabase.rpc("is_admin");
+        nav({ to: isAdmin ? "/admin" : (redirect || "/") });
+      } else {
+        nav({ to: redirect || "/" });
+      }
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Auth failed");
     } finally {
@@ -138,7 +147,16 @@ function AuthPage() {
 
             <div className="mt-6 space-y-3">
               {mode === "signup" && (
-                <Field label="Full name" value={name} onChange={setName} placeholder="Ada Obi" />
+                <>
+                  <Field label="Full name" value={name} onChange={setName} placeholder="Ada Obi" />
+                  <Field
+                    label="Phone number (optional)"
+                    type="tel"
+                    value={phone}
+                    onChange={setPhone}
+                    placeholder="+234 800 000 0000"
+                  />
+                </>
               )}
               <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
               <div>
