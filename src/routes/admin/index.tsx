@@ -200,6 +200,27 @@ function AdminDashboard() {
         <Kpi icon={Utensils} label="Items Sold" value={String(totalItems)} tint="rose" />
       </div>
 
+      {/* Kitchen comparison — only in overall view */}
+      {kitchen === "all" && kitchenSummary.length > 0 && (
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {kitchenSummary.map((k) => (
+            <button
+              key={k.name}
+              onClick={() => setKitchen(k.name)}
+              className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md"
+            >
+              <div className="flex items-center gap-2">
+                <ChefHat className="h-4 w-4 text-emerald-600" />
+                <div className="truncate text-sm font-black">{k.name}</div>
+              </div>
+              <div className="mt-3 font-display text-xl font-black text-emerald-700">{formatNaira(k.revenue)}</div>
+              <div className="text-xs font-bold text-slate-500">{k.orders} orders</div>
+            </button>
+          ))}
+        </div>
+      )}
+
+
       {/* Charts row */}
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
