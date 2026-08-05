@@ -12,13 +12,15 @@ type MenuItem = {
   id: string; name: string; description: string; price: number;
   category_id: string; image_url: string | null; ingredients: string[];
   prep_time_minutes: number; dietary_tags: string[]; spice_level: number; is_available: boolean;
+  kitchen_id: string | null;
 };
 type Category = { id: string; name: string; slug: string };
+type Kitchen = { id: string; name: string; code: string };
 
 const EMPTY: Omit<MenuItem, "id"> = {
   name: "", description: "", price: 0, category_id: "",
   image_url: null, ingredients: [], prep_time_minutes: 20,
-  dietary_tags: [], spice_level: 0, is_available: true,
+  dietary_tags: [], spice_level: 0, is_available: true, kitchen_id: null,
 };
 
 function AdminMenu() {
@@ -38,6 +40,17 @@ function AdminMenu() {
     },
   });
 
+  const [kitchenFilter, setKitchenFilter] = useState<string>("all");
+
+  const kitchens = useQuery({
+    queryKey: ["kitchens"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("kitchens").select("id, name, code").order("sort_order");
+      if (error) throw error;
+      return data as Kitchen[];
+    },
+  });
+
   const cats = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -48,7 +61,11 @@ function AdminMenu() {
   });
 
   const openCreate = () => {
-    setForm({ ...EMPTY, category_id: cats.data?.[0]?.id ?? "" });
+    setForm({
+      ...EMPTY,
+      category_id: cats.data?.[0]?.id ?? "",
+      kitchen_id: kitchenFilter !== "all" ? kitchenFilter : (kitchens.data?.[0]?.id ?? null),
+    });
     setCreating(true);
     setEditing(null);
   };
@@ -135,6 +152,14 @@ function AdminMenu() {
         </button>
       </div>
 
+      {/* Kitchen filter */}
+      <div className="mb-5 flex flex-wrap gap-2">
+        <button onClick={() => setKitchenFilter("all")} className={`rounded-full border px-4 py-2 text-xs font-bold transition ${kitchenFilter === "all" ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>All kitchens</button>
+        {kitchens.data?.map((k) => (
+          <button key={k.id} onClick={() => setKitchenFilter(k.id)} className={`rounded-full border px-4 py-2 text-xs font-bold transition ${kitchenFilter === k.id ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>{k.name}</button>
+        ))}
+      </div>
+
       {/* Inline form — create or edit */}
       {(creating || editing) && (
         <div className="mb-6 rounded-2xl border border-[#F2A900]/30 bg-[#0E1B31] p-6 shadow-xl">
@@ -148,6 +173,12 @@ function AdminMenu() {
               <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Category</div>
               <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white focus:border-[#F2A900] focus:outline-none">
                 {cats.data?.map((c) => <option key={c.id} value={c.id} className="bg-[#0E1B31]">{c.name}</option>)}
+              </select>
+            </div>
+            <div className="block">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Kitchen</div>
+              <select value={form.kitchen_id ?? ""} onChange={(e) => setForm({ ...form, kitchen_id: e.target.value || null })} className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white focus:border-[#F2A900] focus:outline-none">
+                {kitchens.data?.map((k) => <option key={k.id} value={k.id} className="bg-[#0E1B31]">{k.name}</option>)}
               </select>
             </div>
             <Field label="Price (₦)" type="number" value={String(form.price)} onChange={(v) => setForm({ ...form, price: Number(v) })} />
@@ -197,10 +228,10 @@ function AdminMenu() {
 
       {/* Items table */}
       <div className="overflow-x-auto rounded-2xl border border-white/10">
-        <table className="w-full min-w-[700px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
-              {["Item", "Category", "Price", "Prep", "Spice", "Available", ""].map((h) => (
+              {["Item", "Kitchen", "Category", "Price", "Prep", "Spice", "Available", ""].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">{h}</th>
               ))}
             </tr>
@@ -209,10 +240,10 @@ function AdminMenu() {
             {items.isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="border-b border-white/5">
-                  <td colSpan={7} className="px-4 py-3"><div className="h-5 animate-pulse rounded bg-white/10" /></td>
+                  <td colSpan={8} className="px-4 py-3"><div className="h-5 animate-pulse rounded bg-white/10" /></td>
                 </tr>
               ))
-            ) : (items.data ?? []).map((item) => (
+            ) : (items.data ?? []).filter((it) => kitchenFilter === "all" || it.kitchen_id === kitchenFilter).map((item) => (
               <tr key={item.id} className={`border-b border-white/5 transition hover:bg-white/5 ${!item.is_available ? "opacity-50" : ""}`}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -223,6 +254,7 @@ function AdminMenu() {
                     </div>
                   </div>
                 </td>
+                <td className="px-4 py-3 text-slate-300">{kitchens.data?.find((k) => k.id === item.kitchen_id)?.name ?? "—"}</td>
                 <td className="px-4 py-3 text-slate-300">{catName(item.category_id)}</td>
                 <td className="px-4 py-3 font-bold text-[#F2A900]">{formatNaira(Number(item.price))}</td>
                 <td className="px-4 py-3 text-slate-300">{item.prep_time_minutes}m</td>

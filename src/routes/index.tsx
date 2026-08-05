@@ -8,6 +8,9 @@ import { formatNaira } from "@/lib/format";
 import { dishImage, heroBanner } from "@/lib/dish-image";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    kitchen: typeof search.kitchen === "string" ? search.kitchen : undefined,
+  }),
   component: MenuPage,
 });
 
@@ -16,11 +19,14 @@ type MenuItem = {
   id: string; category_id: string; name: string; description: string;
   price: number; image_url: string | null; ingredients: string[];
   prep_time_minutes: number; dietary_tags: string[]; spice_level: number;
+  kitchen_id: string | null;
 };
+type Kitchen = { id: string; name: string; code: string };
 
 const DIETARY = ["vegan", "vegetarian", "gluten-free", "high-protein", "keto"];
 
 function MenuPage() {
+  const { kitchen } = Route.useSearch();
   const [activeCat, setActiveCat] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [maxPrice, setMaxPrice] = useState(10000);
@@ -37,6 +43,17 @@ function MenuPage() {
     },
   });
 
+  const kitchens = useQuery({
+    queryKey: ["kitchens"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("kitchens").select("id, name, code").order("sort_order");
+      if (error) throw error;
+      return data as Kitchen[];
+    },
+  });
+
+  const activeKitchen = kitchens.data?.find((k) => k.code === kitchen) ?? null;
+
   const items = useQuery({
     queryKey: ["menu_items"],
     queryFn: async () => {
@@ -50,6 +67,7 @@ function MenuPage() {
     if (!items.data) return [];
     const q = search.trim().toLowerCase();
     return items.data.filter((it) => {
+      if (activeKitchen && it.kitchen_id !== activeKitchen.id) return false;
       if (activeCat !== "all" && it.category_id !== activeCat) return false;
       if (q && !it.name.toLowerCase().includes(q) && !it.description.toLowerCase().includes(q)) return false;
       if (Number(it.price) > maxPrice) return false;
@@ -57,17 +75,23 @@ function MenuPage() {
       if (tags.length && !tags.every((t) => it.dietary_tags.includes(t))) return false;
       return true;
     });
-  }, [items.data, activeCat, search, maxPrice, maxTime, tags]);
+  }, [items.data, activeKitchen, activeCat, search, maxPrice, maxTime, tags]);
 
   const grouped = useMemo(() => {
     const g = new Map<string, MenuItem[]>();
+    const seen = new Set<string>();
     for (const it of filtered) {
+      if (!activeKitchen) {
+        const key = `${it.category_id}|${it.name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+      }
       const k = it.category_id;
       if (!g.has(k)) g.set(k, []);
       g.get(k)!.push(it);
     }
     return g;
-  }, [filtered]);
+  }, [filtered, activeKitchen]);
 
   return (
     <AppShell>
@@ -85,7 +109,7 @@ function MenuPage() {
         
         <div className="relative z-10 p-8 md:p-12 lg:p-14 max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#F2A900]/60 bg-[#0E1B31]/90 px-4 py-1.5 text-xs font-black text-[#F2A900] shadow-lg backdrop-blur-md">
-            <Flame className="h-4 w-4 text-[#F2A900]" /> Campus Fresh Delivery
+            <Flame className="h-4 w-4 text-[#F2A900]" /> {activeKitchen ? activeKitchen.name : "Campus Fresh Delivery"}
           </div>
           <h1 className="mt-4 font-display text-4xl font-black uppercase tracking-tight text-[#F2A900] sm:text-5xl lg:text-6xl drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
             Order food from the comfort of your hostel

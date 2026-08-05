@@ -1,5 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Flame, ShoppingBag, User, ChefHat, ClipboardList, LogIn, LogOut } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Flame, ShoppingBag, User, ChefHat, ClipboardList, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,12 +9,88 @@ import { toast } from "sonner";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { to: "/", label: "Kitchens", icon: ChefHat },
   { to: "/cart", label: "Cart", icon: ShoppingBag },
   { to: "/orders", label: "My Orders", icon: ClipboardList },
   { to: "/account", label: "Account", icon: User },
 ];
 
+
+export function useKitchens() {
+  return useQuery({
+    queryKey: ["kitchens"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kitchens")
+        .select("id, name, code, sort_order")
+        .order("sort_order");
+      if (error) throw error;
+      return data as { id: string; name: string; code: string; sort_order: number }[];
+    },
+  });
+}
+
+function KitchensDropdown() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const activeKitchen = useRouterState({
+    select: (s) => (s.location.search as { kitchen?: string }).kitchen,
+  });
+  const onMenu = pathname === "/";
+  const [open, setOpen] = useState(onMenu);
+  const kitchens = useKitchens();
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="kitchens-menu"
+        className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-extrabold transition ${
+          onMenu ? "bg-[#F2A900] text-[#1A2B4C] shadow-md" : "text-slate-300 hover:bg-white/10 hover:text-white"
+        }`}
+      >
+        <ChefHat className={`h-4 w-4 ${onMenu ? "text-[#1A2B4C]" : "text-[#F2A900]"}`} />
+        Kitchens
+        <ChevronDown
+          className={`ml-auto h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""} ${
+            onMenu ? "text-[#1A2B4C]" : "text-[#F2A900]"
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div id="kitchens-menu" className="mt-1.5 space-y-1 rounded-xl border border-[#F2A900]/25 bg-[#1A2B4C]/70 p-1.5">
+          <Link
+            to="/"
+            search={{}}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition ${
+              onMenu && !activeKitchen ? "bg-[#F2A900]/20 text-[#F2A900]" : "text-slate-300 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#F2A900]" />
+            All Kitchens
+          </Link>
+          {kitchens.data?.map((k) => {
+            const active = onMenu && activeKitchen === k.code;
+            return (
+              <Link
+                key={k.id}
+                to="/"
+                search={{ kitchen: k.code }}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                  active ? "bg-[#F2A900] text-[#1A2B4C] shadow" : "text-slate-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-[#1A2B4C]" : "bg-[#F2A900]/60"}`} />
+                {k.name}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { count } = useCart();
@@ -48,6 +126,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 space-y-1.5 px-4">
           <div className="px-3 pb-2 pt-4 text-[11px] font-black uppercase tracking-widest text-[#F2A900]/70">Explore</div>
+          <KitchensDropdown />
+
           {NAV.map((n) => {
             const active = pathname === n.to || (n.to !== "/" && pathname.startsWith(n.to));
             return (
@@ -113,6 +193,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Mobile bottom nav */}
         <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-[#1A2B4C] bg-[#0E1B31] text-white lg:hidden">
           <div className="grid grid-cols-4">
+            <Link to="/" className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${pathname === "/" ? "text-[#F2A900]" : "text-slate-400"}`}>
+              <ChefHat className="h-4 w-4" />
+              Kitchens
+            </Link>
             {NAV.map((n) => {
               const active = pathname === n.to || (n.to !== "/" && pathname.startsWith(n.to));
               return (
