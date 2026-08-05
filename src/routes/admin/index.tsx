@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Search, Calendar, ChevronDown, Eye, X, Receipt, TrendingUp,
-  Users, Utensils, DollarSign, ShoppingBag,
+  Users, Utensils, DollarSign, ShoppingBag, ChefHat,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,

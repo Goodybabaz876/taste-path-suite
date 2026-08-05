@@ -393,9 +393,9 @@ function AdminUsers() {
   const { data: users = [], isLoading } = useQuery<AdminUser[]>({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_users");
+      const { data, error } = await supabase.rpc("get_admin_users" as never);
       if (error) throw error;
-      return (data as AdminUser[]) ?? [];
+      return ((data as unknown) as AdminUser[]) ?? [];
     },
     refetchInterval: 30_000, // refresh every 30s so new signups appear
   });
