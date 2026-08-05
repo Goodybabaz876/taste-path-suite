@@ -152,10 +152,45 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] p-4 sm:p-6 lg:p-8 text-[#1A2B4C] -m-4 sm:-m-6 lg:-m-8">
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="font-display text-3xl font-black">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">All payments, orders and analytics across the platform.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          {kitchen === "all"
+            ? "All payments, orders and analytics across every kitchen."
+            : `Payments, orders and analytics for ${kitchen}.`}
+        </p>
       </div>
+
+      {/* Kitchen filter */}
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-500">
+          <ChefHat className="h-4 w-4 text-emerald-600" /> Kitchen
+        </span>
+        <button
+          onClick={() => setKitchen("all")}
+          className={`rounded-full px-4 py-2 text-xs font-black transition ${
+            kitchen === "all"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          Overall Summary
+        </button>
+        {(kitchens.data ?? []).map((k) => (
+          <button
+            key={k.id}
+            onClick={() => setKitchen(k.name)}
+            className={`rounded-full px-4 py-2 text-xs font-black transition ${
+              kitchen === k.name
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {k.name}
+          </button>
+        ))}
+      </div>
+
 
       {/* KPI cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
