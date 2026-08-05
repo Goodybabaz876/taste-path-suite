@@ -212,7 +212,7 @@ function AdminDashboard() {
             <Utensils className="h-5 w-5 text-amber-600" /> Top Selling Meals
           </h2>
           <div className="mt-3 space-y-2">
-            {(topItems.data ?? []).slice(0, 6).map((it, i) => (
+            {topItems.slice(0, 6).map((it, i) => (
               <div key={it.name} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2.5">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-100 text-xs font-black text-amber-700">
                   #{i + 1}
@@ -224,7 +224,7 @@ function AdminDashboard() {
                 <div className="text-xs font-black text-emerald-700">{formatNaira(Number(it.revenue))}</div>
               </div>
             ))}
-            {(topItems.data ?? []).length === 0 && (
+            {topItems.length === 0 && (
               <div className="py-6 text-center text-sm text-slate-400">No sales yet.</div>
             )}
           </div>
@@ -250,7 +250,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {(topCustomers.data ?? []).map((c) => (
+              {topCustomers.map((c) => (
                 <tr key={c.email} className="hover:bg-slate-50">
                   <td className="px-6 py-3 font-semibold">{c.email || "Unknown"}</td>
                   <td className="px-6 py-3">
@@ -267,7 +267,7 @@ function AdminDashboard() {
                   <td className="px-6 py-3 font-black text-emerald-700">{formatNaira(Number(c.total_spent))}</td>
                 </tr>
               ))}
-              {(topCustomers.data ?? []).length === 0 && (
+              {topCustomers.length === 0 && (
                 <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400">No customers yet.</td></tr>
               )}
             </tbody>
