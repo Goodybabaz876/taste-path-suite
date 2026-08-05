@@ -108,6 +108,7 @@ export type Database = {
           image_url: string | null
           ingredients: string[]
           is_available: boolean
+          kitchen_id: string | null
           name: string
           prep_time_minutes: number
           price: number
@@ -122,6 +123,7 @@ export type Database = {
           image_url?: string | null
           ingredients?: string[]
           is_available?: boolean
+          kitchen_id?: string | null
           name: string
           prep_time_minutes?: number
           price: number
@@ -136,6 +138,7 @@ export type Database = {
           image_url?: string | null
           ingredients?: string[]
           is_available?: boolean
+          kitchen_id?: string | null
           name?: string
           prep_time_minutes?: number
           price?: number
@@ -147,6 +150,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_kitchen_id_fkey"
+            columns: ["kitchen_id"]
+            isOneToOne: false
+            referencedRelation: "kitchens"
             referencedColumns: ["id"]
           },
         ]
@@ -401,6 +411,17 @@ export type Database = {
           status: string
           top_item: string
           total: number
+        }[]
+      }
+      get_admin_users: {
+        Args: never
+        Returns: {
+          confirmed_at: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string
         }[]
       }
       has_role: {
