@@ -398,6 +398,7 @@ function AdminDashboard() {
             <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4">Customer (Email)</th>
+                <th className="px-6 py-4">Kitchen</th>
                 <th className="px-6 py-4">Ordered</th>
                 <th className="px-6 py-4">Items</th>
                 <th className="px-6 py-4">Amount</th>
@@ -408,13 +409,18 @@ function AdminDashboard() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {txs.isLoading ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Loading transactions...</td></tr>
+                <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-500">Loading transactions...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">No transactions found.</td></tr>
+                <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-500">No transactions found.</td></tr>
               ) : (
                 filtered.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50 transition">
                     <td className="px-6 py-4 font-semibold text-slate-700">{t.email || "Unknown"}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+                        <ChefHat className="h-3.5 w-3.5" /> {t.kitchen_name}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800">
                         <Utensils className="h-3.5 w-3.5 text-amber-600" />
