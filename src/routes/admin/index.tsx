@@ -22,8 +22,9 @@ type Transaction = {
   item_count: number;
   top_item: string | null;
   items: { name: string; quantity: number; price: number; line_total: number }[];
+  kitchen_name: string;
+  kitchen_code: string;
 };
-type MonthlyRow = { month: string; month_start: string; revenue: number; order_count: number; item_count: number };
 type CustomerRow = { email: string; order_count: number; total_spent: number; favorite_item: string | null };
 type ItemRow = { name: string; qty: number; revenue: number };
 
@@ -32,6 +33,7 @@ function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [kitchen, setKitchen] = useState("all");
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
 
   const txs = useQuery({
@@ -43,36 +45,23 @@ function AdminDashboard() {
     },
   });
 
-  const monthly = useQuery({
-    queryKey: ["admin-monthly"],
+  const kitchens = useQuery({
+    queryKey: ["kitchens"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_sales_analytics");
+      const { data, error } = await supabase.from("kitchens").select("id,name,code,sort_order").order("sort_order");
       if (error) throw error;
-      return (data as unknown) as MonthlyRow[];
+      return data;
     },
   });
 
-  const topCustomers = useQuery({
-    queryKey: ["admin-top-customers"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_top_customers");
-      if (error) throw error;
-      return (data as unknown) as CustomerRow[];
-    },
-  });
-
-  const topItems = useQuery({
-    queryKey: ["admin-top-items"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_top_items");
-      if (error) throw error;
-      return (data as unknown) as ItemRow[];
-    },
-  });
+  /** Transactions scoped to the selected kitchen — drives every analytics block. */
+  const scoped = useMemo(() => {
+    const list = txs.data ?? [];
+    return kitchen === "all" ? list : list.filter((t) => t.kitchen_name === kitchen);
+  }, [txs.data, kitchen]);
 
   const filtered = useMemo(() => {
-    if (!txs.data) return [];
-    let list = txs.data;
+    let list = scoped;
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((t) => t.email.toLowerCase().includes(q) || t.id.toLowerCase().includes(q));
@@ -87,24 +76,79 @@ function AdminDashboard() {
       list = list.filter((t) => new Date(t.created_at).getTime() <= td.getTime());
     }
     return list;
-  }, [txs.data, search, statusFilter, fromDate, toDate]);
+  }, [scoped, search, statusFilter, fromDate, toDate]);
 
-  const totalRevenue = (txs.data ?? []).reduce((s, t) => s + Number(t.total), 0);
-  const totalOrders = (txs.data ?? []).length;
-  const totalItems = (txs.data ?? []).reduce((s, t) => s + Number(t.item_count), 0);
-  const uniqueCustomers = new Set((txs.data ?? []).map((t) => t.email)).size;
+  const totalRevenue = scoped.reduce((s, t) => s + Number(t.total), 0);
+  const totalOrders = scoped.length;
+  const totalItems = scoped.reduce((s, t) => s + Number(t.item_count), 0);
+  const uniqueCustomers = new Set(scoped.map((t) => t.email)).size;
+
+  const chartData = useMemo(() => {
+    const map = new Map<string, { key: number; month: string; revenue: number; orders: number }>();
+    for (const t of scoped) {
+      const d = new Date(t.created_at);
+      const key = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+      const month = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      const row = map.get(month) ?? { key, month, revenue: 0, orders: 0 };
+      row.revenue += Number(t.total);
+      row.orders += 1;
+      map.set(month, row);
+    }
+    return [...map.values()].sort((a, b) => a.key - b.key);
+  }, [scoped]);
 
   const bestMonth = useMemo(() => {
-    const rows = monthly.data ?? [];
-    if (!rows.length) return null;
-    return rows.reduce((best, r) => (Number(r.revenue) > Number(best.revenue) ? r : best), rows[0]);
-  }, [monthly.data]);
+    if (!chartData.length) return null;
+    return chartData.reduce((best, r) => (r.revenue > best.revenue ? r : best), chartData[0]);
+  }, [chartData]);
 
-  const chartData = (monthly.data ?? []).map((r) => ({
-    month: r.month,
-    revenue: Number(r.revenue),
-    orders: Number(r.order_count),
-  }));
+  const topItems = useMemo<ItemRow[]>(() => {
+    const map = new Map<string, ItemRow>();
+    for (const t of scoped) {
+      for (const it of t.items ?? []) {
+        const row = map.get(it.name) ?? { name: it.name, qty: 0, revenue: 0 };
+        row.qty += Number(it.quantity);
+        row.revenue += Number(it.line_total);
+        map.set(it.name, row);
+      }
+    }
+    return [...map.values()].sort((a, b) => b.qty - a.qty);
+  }, [scoped]);
+
+  const topCustomers = useMemo<CustomerRow[]>(() => {
+    const map = new Map<string, CustomerRow & { items: Map<string, number> }>();
+    for (const t of scoped) {
+      const email = t.email || "Unknown";
+      const row = map.get(email) ?? { email, order_count: 0, total_spent: 0, favorite_item: null, items: new Map() };
+      row.order_count += 1;
+      row.total_spent += Number(t.total);
+      for (const it of t.items ?? []) row.items.set(it.name, (row.items.get(it.name) ?? 0) + Number(it.quantity));
+      map.set(email, row);
+    }
+    return [...map.values()]
+      .map((r) => ({
+        email: r.email,
+        order_count: r.order_count,
+        total_spent: r.total_spent,
+        favorite_item: [...r.items.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
+      }))
+      .sort((a, b) => b.order_count - a.order_count || b.total_spent - a.total_spent)
+      .slice(0, 20);
+  }, [scoped]);
+
+  const kitchenSummary = useMemo(() => {
+    const list = txs.data ?? [];
+    const names = (kitchens.data ?? []).map((k) => k.name);
+    return names.map((name) => {
+      const rows = list.filter((t) => t.kitchen_name === name);
+      return {
+        name,
+        revenue: rows.reduce((s, t) => s + Number(t.total), 0),
+        orders: rows.length,
+      };
+    });
+  }, [txs.data, kitchens.data]);
+
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] p-4 sm:p-6 lg:p-8 text-[#1A2B4C] -m-4 sm:-m-6 lg:-m-8">
