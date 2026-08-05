@@ -1,5 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Flame, ShoppingBag, User, ChefHat, ClipboardList, LogIn, LogOut } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Flame, ShoppingBag, User, ChefHat, ClipboardList, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +9,6 @@ import { toast } from "sonner";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { to: "/", label: "Kitchens", icon: ChefHat },
   { to: "/cart", label: "Cart", icon: ShoppingBag },
   { to: "/orders", label: "My Orders", icon: ClipboardList },
   { to: "/account", label: "Account", icon: User },
