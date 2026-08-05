@@ -49,6 +49,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 space-y-1.5 px-4">
           <div className="px-3 pb-2 pt-4 text-[11px] font-black uppercase tracking-widest text-[#F2A900]/70">Explore</div>
+          <KitchensDropdown />
+
           {NAV.map((n) => {
             const active = pathname === n.to || (n.to !== "/" && pathname.startsWith(n.to));
             return (
