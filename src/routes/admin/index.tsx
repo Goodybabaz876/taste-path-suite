@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Search, Calendar, ChevronDown, Eye, X, Receipt, TrendingUp,
-  Users, Utensils, DollarSign, ShoppingBag,
+  Users, Utensils, DollarSign, ShoppingBag, ChefHat,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
@@ -22,8 +22,9 @@ type Transaction = {
   item_count: number;
   top_item: string | null;
   items: { name: string; quantity: number; price: number; line_total: number }[];
+  kitchen_name: string;
+  kitchen_code: string;
 };
-type MonthlyRow = { month: string; month_start: string; revenue: number; order_count: number; item_count: number };
 type CustomerRow = { email: string; order_count: number; total_spent: number; favorite_item: string | null };
 type ItemRow = { name: string; qty: number; revenue: number };
 
@@ -32,6 +33,7 @@ function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [kitchen, setKitchen] = useState("all");
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
 
   const txs = useQuery({
@@ -43,36 +45,23 @@ function AdminDashboard() {
     },
   });
 
-  const monthly = useQuery({
-    queryKey: ["admin-monthly"],
+  const kitchens = useQuery({
+    queryKey: ["kitchens"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_sales_analytics");
+      const { data, error } = await supabase.from("kitchens").select("id,name,code,sort_order").order("sort_order");
       if (error) throw error;
-      return (data as unknown) as MonthlyRow[];
+      return data;
     },
   });
 
-  const topCustomers = useQuery({
-    queryKey: ["admin-top-customers"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_top_customers");
-      if (error) throw error;
-      return (data as unknown) as CustomerRow[];
-    },
-  });
-
-  const topItems = useQuery({
-    queryKey: ["admin-top-items"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_top_items");
-      if (error) throw error;
-      return (data as unknown) as ItemRow[];
-    },
-  });
+  /** Transactions scoped to the selected kitchen — drives every analytics block. */
+  const scoped = useMemo(() => {
+    const list = txs.data ?? [];
+    return kitchen === "all" ? list : list.filter((t) => t.kitchen_name === kitchen);
+  }, [txs.data, kitchen]);
 
   const filtered = useMemo(() => {
-    if (!txs.data) return [];
-    let list = txs.data;
+    let list = scoped;
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((t) => t.email.toLowerCase().includes(q) || t.id.toLowerCase().includes(q));
@@ -87,31 +76,121 @@ function AdminDashboard() {
       list = list.filter((t) => new Date(t.created_at).getTime() <= td.getTime());
     }
     return list;
-  }, [txs.data, search, statusFilter, fromDate, toDate]);
+  }, [scoped, search, statusFilter, fromDate, toDate]);
 
-  const totalRevenue = (txs.data ?? []).reduce((s, t) => s + Number(t.total), 0);
-  const totalOrders = (txs.data ?? []).length;
-  const totalItems = (txs.data ?? []).reduce((s, t) => s + Number(t.item_count), 0);
-  const uniqueCustomers = new Set((txs.data ?? []).map((t) => t.email)).size;
+  const totalRevenue = scoped.reduce((s, t) => s + Number(t.total), 0);
+  const totalOrders = scoped.length;
+  const totalItems = scoped.reduce((s, t) => s + Number(t.item_count), 0);
+  const uniqueCustomers = new Set(scoped.map((t) => t.email)).size;
+
+  const chartData = useMemo(() => {
+    const map = new Map<string, { key: number; month: string; revenue: number; orders: number }>();
+    for (const t of scoped) {
+      const d = new Date(t.created_at);
+      const key = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+      const month = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+      const row = map.get(month) ?? { key, month, revenue: 0, orders: 0 };
+      row.revenue += Number(t.total);
+      row.orders += 1;
+      map.set(month, row);
+    }
+    return [...map.values()].sort((a, b) => a.key - b.key);
+  }, [scoped]);
 
   const bestMonth = useMemo(() => {
-    const rows = monthly.data ?? [];
-    if (!rows.length) return null;
-    return rows.reduce((best, r) => (Number(r.revenue) > Number(best.revenue) ? r : best), rows[0]);
-  }, [monthly.data]);
+    if (!chartData.length) return null;
+    return chartData.reduce((best, r) => (r.revenue > best.revenue ? r : best), chartData[0]);
+  }, [chartData]);
 
-  const chartData = (monthly.data ?? []).map((r) => ({
-    month: r.month,
-    revenue: Number(r.revenue),
-    orders: Number(r.order_count),
-  }));
+  const topItems = useMemo<ItemRow[]>(() => {
+    const map = new Map<string, ItemRow>();
+    for (const t of scoped) {
+      for (const it of t.items ?? []) {
+        const row = map.get(it.name) ?? { name: it.name, qty: 0, revenue: 0 };
+        row.qty += Number(it.quantity);
+        row.revenue += Number(it.line_total);
+        map.set(it.name, row);
+      }
+    }
+    return [...map.values()].sort((a, b) => b.qty - a.qty);
+  }, [scoped]);
+
+  const topCustomers = useMemo<CustomerRow[]>(() => {
+    const map = new Map<string, CustomerRow & { items: Map<string, number> }>();
+    for (const t of scoped) {
+      const email = t.email || "Unknown";
+      const row = map.get(email) ?? { email, order_count: 0, total_spent: 0, favorite_item: null, items: new Map() };
+      row.order_count += 1;
+      row.total_spent += Number(t.total);
+      for (const it of t.items ?? []) row.items.set(it.name, (row.items.get(it.name) ?? 0) + Number(it.quantity));
+      map.set(email, row);
+    }
+    return [...map.values()]
+      .map((r) => ({
+        email: r.email,
+        order_count: r.order_count,
+        total_spent: r.total_spent,
+        favorite_item: [...r.items.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
+      }))
+      .sort((a, b) => b.order_count - a.order_count || b.total_spent - a.total_spent)
+      .slice(0, 20);
+  }, [scoped]);
+
+  const kitchenSummary = useMemo(() => {
+    const list = txs.data ?? [];
+    const names = (kitchens.data ?? []).map((k) => k.name);
+    return names.map((name) => {
+      const rows = list.filter((t) => t.kitchen_name === name);
+      return {
+        name,
+        revenue: rows.reduce((s, t) => s + Number(t.total), 0),
+        orders: rows.length,
+      };
+    });
+  }, [txs.data, kitchens.data]);
+
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] p-4 sm:p-6 lg:p-8 text-[#1A2B4C] -m-4 sm:-m-6 lg:-m-8">
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="font-display text-3xl font-black">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">All payments, orders and analytics across the platform.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          {kitchen === "all"
+            ? "All payments, orders and analytics across every kitchen."
+            : `Payments, orders and analytics for ${kitchen}.`}
+        </p>
       </div>
+
+      {/* Kitchen filter */}
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-500">
+          <ChefHat className="h-4 w-4 text-emerald-600" /> Kitchen
+        </span>
+        <button
+          onClick={() => setKitchen("all")}
+          className={`rounded-full px-4 py-2 text-xs font-black transition ${
+            kitchen === "all"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          Overall Summary
+        </button>
+        {(kitchens.data ?? []).map((k) => (
+          <button
+            key={k.id}
+            onClick={() => setKitchen(k.name)}
+            className={`rounded-full px-4 py-2 text-xs font-black transition ${
+              kitchen === k.name
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {k.name}
+          </button>
+        ))}
+      </div>
+
 
       {/* KPI cards */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -120,6 +199,27 @@ function AdminDashboard() {
         <Kpi icon={Users} label="Customers" value={String(uniqueCustomers)} tint="indigo" />
         <Kpi icon={Utensils} label="Items Sold" value={String(totalItems)} tint="rose" />
       </div>
+
+      {/* Kitchen comparison — only in overall view */}
+      {kitchen === "all" && kitchenSummary.length > 0 && (
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {kitchenSummary.map((k) => (
+            <button
+              key={k.name}
+              onClick={() => setKitchen(k.name)}
+              className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md"
+            >
+              <div className="flex items-center gap-2">
+                <ChefHat className="h-4 w-4 text-emerald-600" />
+                <div className="truncate text-sm font-black">{k.name}</div>
+              </div>
+              <div className="mt-3 font-display text-xl font-black text-emerald-700">{formatNaira(k.revenue)}</div>
+              <div className="text-xs font-bold text-slate-500">{k.orders} orders</div>
+            </button>
+          ))}
+        </div>
+      )}
+
 
       {/* Charts row */}
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
@@ -168,7 +268,7 @@ function AdminDashboard() {
             <Utensils className="h-5 w-5 text-amber-600" /> Top Selling Meals
           </h2>
           <div className="mt-3 space-y-2">
-            {(topItems.data ?? []).slice(0, 6).map((it, i) => (
+            {topItems.slice(0, 6).map((it, i) => (
               <div key={it.name} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2.5">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-100 text-xs font-black text-amber-700">
                   #{i + 1}
@@ -180,7 +280,7 @@ function AdminDashboard() {
                 <div className="text-xs font-black text-emerald-700">{formatNaira(Number(it.revenue))}</div>
               </div>
             ))}
-            {(topItems.data ?? []).length === 0 && (
+            {topItems.length === 0 && (
               <div className="py-6 text-center text-sm text-slate-400">No sales yet.</div>
             )}
           </div>
@@ -206,7 +306,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {(topCustomers.data ?? []).map((c) => (
+              {topCustomers.map((c) => (
                 <tr key={c.email} className="hover:bg-slate-50">
                   <td className="px-6 py-3 font-semibold">{c.email || "Unknown"}</td>
                   <td className="px-6 py-3">
@@ -223,7 +323,7 @@ function AdminDashboard() {
                   <td className="px-6 py-3 font-black text-emerald-700">{formatNaira(Number(c.total_spent))}</td>
                 </tr>
               ))}
-              {(topCustomers.data ?? []).length === 0 && (
+              {topCustomers.length === 0 && (
                 <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400">No customers yet.</td></tr>
               )}
             </tbody>
@@ -298,6 +398,7 @@ function AdminDashboard() {
             <thead className="bg-slate-50 text-xs font-black uppercase text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-4">Customer (Email)</th>
+                <th className="px-6 py-4">Kitchen</th>
                 <th className="px-6 py-4">Ordered</th>
                 <th className="px-6 py-4">Items</th>
                 <th className="px-6 py-4">Amount</th>
@@ -308,13 +409,18 @@ function AdminDashboard() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {txs.isLoading ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">Loading transactions...</td></tr>
+                <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-500">Loading transactions...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-500">No transactions found.</td></tr>
+                <tr><td colSpan={8} className="px-6 py-10 text-center text-slate-500">No transactions found.</td></tr>
               ) : (
                 filtered.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50 transition">
                     <td className="px-6 py-4 font-semibold text-slate-700">{t.email || "Unknown"}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+                        <ChefHat className="h-3.5 w-3.5" /> {t.kitchen_name}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800">
                         <Utensils className="h-3.5 w-3.5 text-amber-600" />
