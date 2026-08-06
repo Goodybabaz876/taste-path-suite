@@ -16,7 +16,7 @@ type ActiveOrder = {
   order_items: { name: string; quantity: number }[];
 };
 
-const ACTIVE = ["placed", "preparing", "out_for_delivery"];
+const ACTIVE = ["placed", "preparing", "out_for_delivery"] as const;
 
 const STEPS = [
   { key: "placed", label: "Order received", icon: Clock },
