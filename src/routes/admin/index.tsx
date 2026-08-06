@@ -9,6 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdmin } from "@/hooks/use-admin";
 import { formatNaira } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/")({ component: AdminDashboard });
@@ -29,6 +30,7 @@ type CustomerRow = { email: string; order_count: number; total_spent: number; fa
 type ItemRow = { name: string; qty: number; revenue: number };
 
 function AdminDashboard() {
+  const { isSuper, kitchenId, kitchenName } = useAdmin();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [fromDate, setFromDate] = useState("");
@@ -37,9 +39,12 @@ function AdminDashboard() {
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
 
   const txs = useQuery({
-    queryKey: ["admin-transactions"],
+    queryKey: ["admin-transactions", isSuper ? "all" : kitchenId],
+    enabled: isSuper || !!kitchenId,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_transactions");
+      const { data, error } = isSuper
+        ? await supabase.rpc("get_admin_transactions")
+        : await supabase.rpc("get_kitchen_transactions", { _kitchen: kitchenId! });
       if (error) throw error;
       return (data as unknown) as Transaction[];
     },
@@ -155,13 +160,16 @@ function AdminDashboard() {
       <div className="mb-5">
         <h1 className="font-display text-3xl font-black">Dashboard</h1>
         <p className="mt-1 text-sm text-slate-500">
-          {kitchen === "all"
-            ? "All payments, orders and analytics across every kitchen."
-            : `Payments, orders and analytics for ${kitchen}.`}
+          {!isSuper
+            ? `Payments, orders and analytics for ${kitchenName ?? "your kitchen"}.`
+            : kitchen === "all"
+              ? "All payments, orders and analytics across every kitchen."
+              : `Payments, orders and analytics for ${kitchen}.`}
         </p>
       </div>
 
-      {/* Kitchen filter */}
+      {/* Kitchen filter — super admin only */}
+      {isSuper && (
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <span className="mr-1 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-500">
           <ChefHat className="h-4 w-4 text-emerald-600" /> Kitchen
@@ -190,6 +198,7 @@ function AdminDashboard() {
           </button>
         ))}
       </div>
+      )}
 
 
       {/* KPI cards */}
@@ -201,7 +210,7 @@ function AdminDashboard() {
       </div>
 
       {/* Kitchen comparison — only in overall view */}
-      {kitchen === "all" && kitchenSummary.length > 0 && (
+      {isSuper && kitchen === "all" && kitchenSummary.length > 0 && (
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {kitchenSummary.map((k) => (
             <button

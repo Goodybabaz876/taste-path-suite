@@ -21,6 +21,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as OrderIdRouteImport } from './routes/order.$id'
 import { Route as DishIdRouteImport } from './routes/dish.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as AdminOrdersRouteImport } from './routes/admin/orders'
 import { Route as AdminMenuRouteImport } from './routes/admin/menu'
 import { Route as AdminCategoriesRouteImport } from './routes/admin/categories'
@@ -85,6 +86,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStaffRoute = AdminStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/staff': typeof AdminStaffRoute
   '/admin/users': typeof AdminUsersRoute
   '/dish/$id': typeof DishIdRoute
   '/order/$id': typeof OrderIdRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/staff': typeof AdminStaffRoute
   '/admin/users': typeof AdminUsersRoute
   '/dish/$id': typeof DishIdRoute
   '/order/$id': typeof OrderIdRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/menu': typeof AdminMenuRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/staff': typeof AdminStaffRoute
   '/admin/users': typeof AdminUsersRoute
   '/dish/$id': typeof DishIdRoute
   '/order/$id': typeof OrderIdRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/staff'
     | '/admin/users'
     | '/dish/$id'
     | '/order/$id'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/staff'
     | '/admin/users'
     | '/dish/$id'
     | '/order/$id'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/menu'
     | '/admin/orders'
+    | '/admin/staff'
     | '/admin/users'
     | '/dish/$id'
     | '/order/$id'
@@ -304,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/staff': {
+      id: '/admin/staff'
+      path: '/staff'
+      fullPath: '/admin/staff'
+      preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/orders': {
       id: '/admin/orders'
       path: '/orders'
@@ -332,6 +351,7 @@ interface AdminRouteChildren {
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminMenuRoute: typeof AdminMenuRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminStaffRoute: typeof AdminStaffRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -340,6 +360,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminMenuRoute: AdminMenuRoute,
   AdminOrdersRoute: AdminOrdersRoute,
+  AdminStaffRoute: AdminStaffRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

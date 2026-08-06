@@ -4,13 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, Clock, Flame, Leaf, Filter, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { PendingOrders } from "@/components/PendingOrders";
 import { formatNaira } from "@/lib/format";
 import { dishImage, heroBanner } from "@/lib/dish-image";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    kitchen: typeof search.kitchen === "string" ? search.kitchen : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { kitchen?: string } =>
+    typeof search.kitchen === "string" ? { kitchen: search.kitchen } : {},
   component: MenuPage,
 });
 
@@ -119,6 +119,8 @@ function MenuPage() {
           </p>
         </div>
       </section>
+
+      <PendingOrders />
 
       {/* Search + filter bar */}
       <section className="sticky top-0 z-20 -mx-4 mt-6 border-b border-[#E2E1D0] bg-[#FAFAED]/90 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">

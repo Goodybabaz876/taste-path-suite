@@ -74,6 +74,59 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_catalog: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string
+          dietary_tags: string[]
+          id: string
+          image_url: string | null
+          ingredients: string[]
+          name: string
+          prep_time_minutes: number
+          price: number
+          spice_level: number
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          dietary_tags?: string[]
+          id?: string
+          image_url?: string | null
+          ingredients?: string[]
+          name: string
+          prep_time_minutes?: number
+          price?: number
+          spice_level?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          dietary_tags?: string[]
+          id?: string
+          image_url?: string | null
+          ingredients?: string[]
+          name?: string
+          prep_time_minutes?: number
+          price?: number
+          spice_level?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_catalog_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -326,28 +379,40 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          kitchen_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          kitchen_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          kitchen_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_kitchen_id_fkey"
+            columns: ["kitchen_id"]
+            isOneToOne: false
+            referencedRelation: "kitchens"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_manage_kitchen: { Args: { _kitchen: string }; Returns: boolean }
       get_admin_kitchen_analytics: {
         Args: never
         Returns: {
@@ -424,6 +489,48 @@ export type Database = {
           phone: string
         }[]
       }
+      get_kitchen_monthly: {
+        Args: { _kitchen: string }
+        Returns: {
+          item_count: number
+          month: string
+          month_start: string
+          order_count: number
+          revenue: number
+        }[]
+      }
+      get_kitchen_top_items: {
+        Args: { _kitchen: string }
+        Returns: {
+          name: string
+          qty: number
+          revenue: number
+        }[]
+      }
+      get_kitchen_transactions: {
+        Args: { _kitchen: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          item_count: number
+          items: Json
+          kitchen_code: string
+          kitchen_name: string
+          status: string
+          top_item: string
+          total: number
+        }[]
+      }
+      get_my_admin_scope: {
+        Args: never
+        Returns: {
+          is_super: boolean
+          kitchen_code: string
+          kitchen_id: string
+          kitchen_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -432,6 +539,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
