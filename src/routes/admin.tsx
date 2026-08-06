@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import { useEffect } from "react";
 import {
   LayoutDashboard, ListOrdered, UtensilsCrossed, Tags, LogOut, Flame,
-  ChevronRight, Users,
+  ChevronRight, Users, ShieldCheck,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -46,6 +46,7 @@ const NAV = [
     to: "/admin/categories",
     label: "Categories",
     icon: Tags,
+    superOnly: true,
     from: "#F43F5E",
     to_color: "#EC4899",
     glow: "rgba(244,63,94,0.35)",
@@ -55,18 +56,30 @@ const NAV = [
     to: "/admin/users",
     label: "Users",
     icon: Users,
+    superOnly: true,
     from: "#7C3AED",
     to_color: "#4F46E5",
     glow: "rgba(124,58,237,0.35)",
     dot: "#7C3AED",
   },
+  {
+    to: "/admin/staff",
+    label: "Kitchen Admins",
+    icon: ShieldCheck,
+    superOnly: true,
+    from: "#0EA5E9",
+    to_color: "#6366F1",
+    glow: "rgba(14,165,233,0.35)",
+    dot: "#0EA5E9",
+  },
 ];
 
 function AdminLayout() {
-  const { isAdmin, loading } = useAdmin();
+  const { isAdmin, isSuper, kitchenName, loading } = useAdmin();
   const { user } = useAuth();
   const nav = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navItems = NAV.filter((n) => isSuper || !n.superOnly);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -139,7 +152,7 @@ function AdminLayout() {
 
         {/* Nav items */}
         <nav className="flex-1 space-y-1 px-3">
-          {NAV.map((n) => {
+          {navItems.map((n) => {
             const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
             return (
               <Link
@@ -197,7 +210,7 @@ function AdminLayout() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[11px] font-bold text-[#F2A900]">{user?.email}</div>
-              <div className="text-[10px] text-slate-500">Super Admin</div>
+              <div className="text-[10px] text-slate-500">{isSuper ? "Super Admin" : `${kitchenName ?? "Kitchen"} Admin`}</div>
             </div>
           </div>
           <button
@@ -227,7 +240,7 @@ function AdminLayout() {
           </Link>
 
           <div className="flex gap-1">
-            {NAV.map((n) => {
+            {navItems.map((n) => {
               const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
               return (
                 <Link

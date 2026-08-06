@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, X, Check, ToggleLeft, ToggleRight, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdmin } from "@/hooks/use-admin";
 import { formatNaira } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/menu")({ component: AdminMenu });
@@ -16,6 +17,11 @@ type MenuItem = {
 };
 type Category = { id: string; name: string; slug: string };
 type Kitchen = { id: string; name: string; code: string };
+type CatalogItem = {
+  id: string; name: string; description: string; price: number;
+  category_id: string | null; image_url: string | null; ingredients: string[];
+  prep_time_minutes: number; dietary_tags: string[]; spice_level: number;
+};
 
 const EMPTY: Omit<MenuItem, "id"> = {
   name: "", description: "", price: 0, category_id: "",
@@ -25,6 +31,7 @@ const EMPTY: Omit<MenuItem, "id"> = {
 
 function AdminMenu() {
   const qc = useQueryClient();
+  const { isSuper, kitchenId: myKitchenId, kitchenName } = useAdmin();
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<Omit<MenuItem, "id">>(EMPTY);
@@ -40,7 +47,9 @@ function AdminMenu() {
     },
   });
 
-  const [kitchenFilter, setKitchenFilter] = useState<string>("all");
+  const [kitchenFilterRaw, setKitchenFilter] = useState<string>("all");
+  const kitchenFilter = isSuper ? kitchenFilterRaw : (myKitchenId ?? "all");
+  const [picking, setPicking] = useState(false);
 
   const kitchens = useQuery({
     queryKey: ["kitchens"],
@@ -60,12 +69,65 @@ function AdminMenu() {
     },
   });
 
+  const catalog = useQuery({
+    queryKey: ["menu-catalog"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("menu_catalog").select("*").order("name");
+      if (error) throw error;
+      return data as CatalogItem[];
+    },
+  });
+
+  /** Names already on the currently selected kitchen's menu. */
+  const currentKitchenId = kitchenFilter !== "all" ? kitchenFilter : (kitchens.data?.[0]?.id ?? null);
+  const existingNames = new Set(
+    (items.data ?? []).filter((i) => i.kitchen_id === currentKitchenId).map((i) => i.name.toLowerCase()),
+  );
+
+  /** Save the meal into the reusable catalogue so it can be re-added after deletion. */
+  const rememberInCatalog = async (m: Omit<MenuItem, "id">) => {
+    await supabase.from("menu_catalog").upsert(
+      {
+        name: m.name,
+        description: m.description,
+        price: m.price,
+        category_id: m.category_id,
+        image_url: m.image_url,
+        ingredients: m.ingredients,
+        prep_time_minutes: m.prep_time_minutes,
+        dietary_tags: m.dietary_tags,
+        spice_level: m.spice_level,
+      },
+      { onConflict: "name" },
+    );
+  };
+
+  const addFromCatalog = (c: CatalogItem) => {
+    setForm({
+      name: c.name,
+      description: c.description,
+      price: Number(c.price),
+      category_id: c.category_id ?? cats.data?.[0]?.id ?? "",
+      image_url: c.image_url,
+      ingredients: c.ingredients ?? [],
+      prep_time_minutes: c.prep_time_minutes,
+      dietary_tags: c.dietary_tags ?? [],
+      spice_level: c.spice_level,
+      is_available: true,
+      kitchen_id: currentKitchenId,
+    });
+    setPicking(false);
+    setCreating(true);
+    setEditing(null);
+  };
+
   const openCreate = () => {
     setForm({
       ...EMPTY,
       category_id: cats.data?.[0]?.id ?? "",
-      kitchen_id: kitchenFilter !== "all" ? kitchenFilter : (kitchens.data?.[0]?.id ?? null),
+      kitchen_id: currentKitchenId,
     });
+    setPicking(false);
     setCreating(true);
     setEditing(null);
   };
@@ -74,7 +136,7 @@ function AdminMenu() {
     setEditing(item);
     setCreating(false);
   };
-  const closeForm = () => { setCreating(false); setEditing(null); };
+  const closeForm = () => { setCreating(false); setEditing(null); setPicking(false); };
 
   const uploadImage = async (file: File): Promise<string | null> => {
     setUploadBusy(true);
@@ -108,6 +170,7 @@ function AdminMenu() {
         if (error) throw error;
         toast.success("Item created");
       }
+      await rememberInCatalog(form);
       qc.invalidateQueries({ queryKey: ["admin-menu-items"] });
       qc.invalidateQueries({ queryKey: ["menu_items"] });
       qc.invalidateQueries({ queryKey: ["admin-menu-count"] });
@@ -127,11 +190,15 @@ function AdminMenu() {
   };
 
   const deleteItem = async (id: string) => {
-    if (!confirm("Delete this menu item? This cannot be undone.")) return;
+    if (!confirm("Remove this meal from the menu? You can add it back later from your saved meals list.")) return;
+    const existing = (items.data ?? []).find((i) => i.id === id);
+    if (existing) await rememberInCatalog(existing);
     const { error } = await supabase.from("menu_items").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Item deleted");
+    toast.success("Item removed — still saved in your meals list");
+    qc.invalidateQueries({ queryKey: ["menu-catalog"] });
     qc.invalidateQueries({ queryKey: ["admin-menu-items"] });
+    qc.invalidateQueries({ queryKey: ["menu_items"] });
     qc.invalidateQueries({ queryKey: ["admin-menu-count"] });
   };
 
@@ -142,23 +209,69 @@ function AdminMenu() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-black text-white">Menu Items</h1>
-          <p className="mt-1 text-sm text-slate-400">{items.data?.length ?? 0} items across {cats.data?.length ?? 0} categories</p>
+          <p className="mt-1 text-sm text-slate-400">
+            {isSuper
+              ? `${items.data?.length ?? 0} items across ${cats.data?.length ?? 0} categories`
+              : `${kitchenName ?? "Your kitchen"} — ${(items.data ?? []).filter((i) => i.kitchen_id === myKitchenId).length} meals`}
+          </p>
         </div>
         <button
-          onClick={openCreate}
+          onClick={() => { setPicking((p) => !p); setCreating(false); setEditing(null); }}
           className="flex items-center gap-2 rounded-xl bg-[#F2A900] px-4 py-2.5 text-sm font-extrabold text-[#1A2B4C] shadow-lg transition hover:bg-[#E09B00] active:scale-95"
         >
           <Plus className="h-4 w-4" aria-hidden="true" /> Add item
         </button>
       </div>
 
-      {/* Kitchen filter */}
-      <div className="mb-5 flex flex-wrap gap-2">
-        <button onClick={() => setKitchenFilter("all")} className={`rounded-full border px-4 py-2 text-xs font-bold transition ${kitchenFilter === "all" ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>All kitchens</button>
-        {kitchens.data?.map((k) => (
-          <button key={k.id} onClick={() => setKitchenFilter(k.id)} className={`rounded-full border px-4 py-2 text-xs font-bold transition ${kitchenFilter === k.id ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>{k.name}</button>
-        ))}
-      </div>
+      {/* Kitchen filter — super admin only */}
+      {isSuper && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          <button onClick={() => setKitchenFilter("all")} className={`rounded-full border px-4 py-2 text-xs font-bold transition ${kitchenFilter === "all" ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>All kitchens</button>
+          {kitchens.data?.map((k) => (
+            <button key={k.id} onClick={() => setKitchenFilter(k.id)} className={`rounded-full border px-4 py-2 text-xs font-bold transition ${kitchenFilter === k.id ? "border-[#F2A900] bg-[#F2A900] text-[#1A2B4C]" : "border-white/10 text-slate-300 hover:bg-white/5"}`}>{k.name}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Saved meals picker */}
+      {picking && (
+        <div className="mb-6 rounded-2xl border border-white/10 bg-[#0E1B31] p-5 shadow-xl">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="font-display text-base font-black text-[#F2A900]">Add a meal to {kitchens.data?.find((k) => k.id === currentKitchenId)?.name ?? "this kitchen"}</div>
+            <button onClick={() => setPicking(false)} aria-label="Close" className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
+          </div>
+          <button
+            onClick={openCreate}
+            className="mb-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-[#F2A900]/50 px-4 py-3 text-sm font-extrabold text-[#F2A900] transition hover:bg-[#F2A900]/10"
+          >
+            <Plus className="h-4 w-4" /> Add new item (not on the list)
+          </button>
+          <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Saved meals</div>
+          <div className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-white/10">
+            {(catalog.data ?? []).length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-500">No saved meals yet.</div>
+            ) : catalog.data!.map((c) => {
+              const already = existingNames.has(c.name.toLowerCase());
+              return (
+                <button
+                  key={c.id}
+                  disabled={already}
+                  onClick={() => addFromCatalog(c)}
+                  className="flex w-full items-center gap-3 border-b border-white/5 px-4 py-2.5 text-left transition last:border-0 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {c.image_url && <img src={c.image_url} alt="" className="h-9 w-9 rounded-lg object-cover" />}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-white">{c.name}</div>
+                    <div className="truncate text-[11px] text-slate-500">{c.description}</div>
+                  </div>
+                  <div className="shrink-0 text-sm font-bold text-[#F2A900]">{formatNaira(Number(c.price))}</div>
+                  {already && <span className="shrink-0 text-[10px] font-black uppercase text-slate-500">On menu</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Inline form — create or edit */}
       {(creating || editing) && (
@@ -178,7 +291,7 @@ function AdminMenu() {
             <div className="block">
               <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Kitchen</div>
               <select value={form.kitchen_id ?? ""} onChange={(e) => setForm({ ...form, kitchen_id: e.target.value || null })} className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white focus:border-[#F2A900] focus:outline-none">
-                {kitchens.data?.map((k) => <option key={k.id} value={k.id} className="bg-[#0E1B31]">{k.name}</option>)}
+                {(kitchens.data ?? []).filter((k) => isSuper || k.id === myKitchenId).map((k) => <option key={k.id} value={k.id} className="bg-[#0E1B31]">{k.name}</option>)}
               </select>
             </div>
             <Field label="Price (₦)" type="number" value={String(form.price)} onChange={(v) => setForm({ ...form, price: Number(v) })} />

@@ -8,9 +8,8 @@ import { formatNaira } from "@/lib/format";
 import { dishImage, heroBanner } from "@/lib/dish-image";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    kitchen: typeof search.kitchen === "string" ? search.kitchen : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { kitchen?: string } =>
+    typeof search.kitchen === "string" ? { kitchen: search.kitchen } : {},
   component: MenuPage,
 });
 
