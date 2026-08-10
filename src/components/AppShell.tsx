@@ -96,7 +96,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { count } = useCart();
   const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const activeKitchen = useRouterState({
+    select: (s) => (s.location.search as { kitchen?: string }).kitchen,
+  });
   const nav = useNavigate();
+  const [kitchenSheet, setKitchenSheet] = useState(false);
+  const kitchens = useKitchens();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -190,13 +195,67 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-10">{children}</main>
 
+        {/* Mobile kitchens sheet */}
+        {kitchenSheet && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <button
+              type="button"
+              aria-label="Close kitchens menu"
+              onClick={() => setKitchenSheet(false)}
+              className="absolute inset-0 bg-black/50"
+            />
+            <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-[#F2A900]/30 bg-[#0E1B31] p-4 pb-24 text-white shadow-2xl">
+              <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/20" />
+              <div className="px-1 pb-2 text-[11px] font-black uppercase tracking-widest text-[#F2A900]/70">Kitchens</div>
+              <div className="space-y-1.5">
+                <Link
+                  to="/"
+                  search={{}}
+                  onClick={() => setKitchenSheet(false)}
+                  className={`flex items-center gap-2.5 rounded-xl px-3.5 py-3 text-sm font-bold transition ${
+                    pathname === "/" && !activeKitchen ? "bg-[#F2A900] text-[#1A2B4C]" : "bg-white/5 text-slate-200"
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                  All Kitchens
+                </Link>
+                {kitchens.data?.map((k) => {
+                  const active = pathname === "/" && activeKitchen === k.code;
+                  return (
+                    <Link
+                      key={k.id}
+                      to="/"
+                      search={{ kitchen: k.code }}
+                      onClick={() => setKitchenSheet(false)}
+                      className={`flex items-center gap-2.5 rounded-xl px-3.5 py-3 text-sm font-bold transition ${
+                        active ? "bg-[#F2A900] text-[#1A2B4C]" : "bg-white/5 text-slate-200"
+                      }`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                      {k.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile bottom nav */}
         <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-[#1A2B4C] bg-[#0E1B31] text-white lg:hidden">
           <div className="grid grid-cols-4">
-            <Link to="/" className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${pathname === "/" ? "text-[#F2A900]" : "text-slate-400"}`}>
-              <ChefHat className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={() => setKitchenSheet((o) => !o)}
+              aria-expanded={kitchenSheet}
+              className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${pathname === "/" ? "text-[#F2A900]" : "text-slate-400"}`}
+            >
+              <span className="flex items-center gap-0.5">
+                <ChefHat className="h-4 w-4" />
+                <ChevronDown className={`h-3 w-3 transition-transform ${kitchenSheet ? "rotate-180" : ""}`} />
+              </span>
               Kitchens
-            </Link>
+            </button>
             {NAV.map((n) => {
               const active = pathname === n.to || (n.to !== "/" && pathname.startsWith(n.to));
               return (
