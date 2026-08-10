@@ -96,7 +96,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { count } = useCart();
   const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const activeKitchen = useRouterState({
+    select: (s) => (s.location.search as { kitchen?: string }).kitchen,
+  });
   const nav = useNavigate();
+  const [kitchenSheet, setKitchenSheet] = useState(false);
+  const kitchens = useKitchens();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
