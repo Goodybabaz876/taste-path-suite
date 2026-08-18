@@ -153,6 +153,7 @@ export type Database = {
       }
       menu_items: {
         Row: {
+          availability_status: string
           category_id: string
           created_at: string
           description: string
@@ -168,6 +169,7 @@ export type Database = {
           spice_level: number
         }
         Insert: {
+          availability_status?: string
           category_id: string
           created_at?: string
           description: string
@@ -183,6 +185,7 @@ export type Database = {
           spice_level?: number
         }
         Update: {
+          availability_status?: string
           category_id?: string
           created_at?: string
           description?: string
