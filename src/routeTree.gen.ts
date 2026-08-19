@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as KitchenAdminRouteImport } from './routes/kitchen-admin'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -18,6 +19,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as PaymentSuccessIdRouteImport } from './routes/payment-success.$id'
 import { Route as OrderIdRouteImport } from './routes/order.$id'
 import { Route as DishIdRouteImport } from './routes/dish.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
@@ -34,6 +36,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KitchenAdminRoute = KitchenAdminRouteImport.update({
+  id: '/kitchen-admin',
+  path: '/kitchen-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -70,6 +77,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const PaymentSuccessIdRoute = PaymentSuccessIdRouteImport.update({
+  id: '/payment-success/$id',
+  path: '/payment-success/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OrderIdRoute = OrderIdRouteImport.update({
   id: '/order/$id',
@@ -114,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/kitchen-admin': typeof KitchenAdminRoute
   '/orders': typeof OrdersRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -123,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/dish/$id': typeof DishIdRoute
   '/order/$id': typeof OrderIdRoute
+  '/payment-success/$id': typeof PaymentSuccessIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -131,6 +145,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/kitchen-admin': typeof KitchenAdminRoute
   '/orders': typeof OrdersRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -140,6 +155,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/dish/$id': typeof DishIdRoute
   '/order/$id': typeof OrderIdRoute
+  '/payment-success/$id': typeof PaymentSuccessIdRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -150,6 +166,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/kitchen-admin': typeof KitchenAdminRoute
   '/orders': typeof OrdersRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/categories': typeof AdminCategoriesRoute
@@ -159,6 +176,7 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/dish/$id': typeof DishIdRoute
   '/order/$id': typeof OrderIdRoute
+  '/payment-success/$id': typeof PaymentSuccessIdRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -170,6 +188,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/kitchen-admin'
     | '/orders'
     | '/reset-password'
     | '/admin/categories'
@@ -179,6 +198,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/dish/$id'
     | '/order/$id'
+    | '/payment-success/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -187,6 +207,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/kitchen-admin'
     | '/orders'
     | '/reset-password'
     | '/admin/categories'
@@ -196,6 +217,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/dish/$id'
     | '/order/$id'
+    | '/payment-success/$id'
     | '/admin'
   id:
     | '__root__'
@@ -205,6 +227,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/kitchen-admin'
     | '/orders'
     | '/reset-password'
     | '/admin/categories'
@@ -214,6 +237,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/dish/$id'
     | '/order/$id'
+    | '/payment-success/$id'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -224,10 +248,12 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
+  KitchenAdminRoute: typeof KitchenAdminRoute
   OrdersRoute: typeof OrdersRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   DishIdRoute: typeof DishIdRoute
   OrderIdRoute: typeof OrderIdRoute
+  PaymentSuccessIdRoute: typeof PaymentSuccessIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -244,6 +270,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kitchen-admin': {
+      id: '/kitchen-admin'
+      path: '/kitchen-admin'
+      fullPath: '/kitchen-admin'
+      preLoaderRoute: typeof KitchenAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -294,6 +327,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/payment-success/$id': {
+      id: '/payment-success/$id'
+      path: '/payment-success/$id'
+      fullPath: '/payment-success/$id'
+      preLoaderRoute: typeof PaymentSuccessIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/order/$id': {
       id: '/order/$id'
@@ -374,10 +414,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
+  KitchenAdminRoute: KitchenAdminRoute,
   OrdersRoute: OrdersRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   DishIdRoute: DishIdRoute,
   OrderIdRoute: OrderIdRoute,
+  PaymentSuccessIdRoute: PaymentSuccessIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
