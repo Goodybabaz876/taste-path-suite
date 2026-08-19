@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,94 +8,16 @@ import {
   ChevronRight, Pencil, Trash2, AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-/* ══════════════════════════════════════════════════════════
-   SERVER FUNCTIONS  (run server-side using service-role key)
-══════════════════════════════════════════════════════════ */
-
-/** Create a new user account */
-const adminCreateUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator(
-    (d: unknown) =>
-      d as { email: string; password: string; full_name: string; phone: string }
-  )
-  .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("is_admin");
-    if (!isAdmin) throw new Error("Access denied");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      user_metadata: { full_name: data.full_name, phone: data.phone || null },
-      email_confirm: true,
-    });
-    if (error) throw new Error(error.message);
-
-    if (created.user) {
-      await supabaseAdmin.from("profiles").upsert({
-        id: created.user.id,
-        full_name: data.full_name,
-        phone: data.phone || null,
-        updated_at: new Date().toISOString(),
-      });
-    }
-    return { success: true };
-  });
-
-/** Update an existing user's profile (name + phone) */
-const adminUpdateUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator(
-    (d: unknown) =>
-      d as { userId: string; full_name: string; phone: string }
-  )
-  .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("is_admin");
-    if (!isAdmin) throw new Error("Access denied");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    // Update auth user metadata
-    await supabaseAdmin.auth.admin.updateUserById(data.userId, {
-      user_metadata: { full_name: data.full_name, phone: data.phone || null },
-    });
-
-    // Update profiles table
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        full_name: data.full_name,
-        phone: data.phone || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.userId);
-
-    if (error) throw new Error(error.message);
-    return { success: true };
-  });
-
-/** Delete a user account entirely */
-const adminDeleteUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => d as { userId: string })
-  .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("is_admin");
-    if (!isAdmin) throw new Error("Access denied");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (error) throw new Error(error.message);
-    return { success: true };
-  });
+import {
+  adminCreateUser,
+  adminUpdateUser,
+  adminDeleteUser,
+} from "@/lib/admin-user-fns";
 
 export const Route = createFileRoute("/admin/users")({
   component: AdminUsers,
 });
+
 
 /* ══════════════════════════════════════════════════════════
    TYPES

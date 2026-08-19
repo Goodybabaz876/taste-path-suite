@@ -259,8 +259,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             {NAV.map((n) => {
               const active = pathname === n.to || (n.to !== "/" && pathname.startsWith(n.to));
               return (
-                <Link key={n.to} to={n.to} className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${active ? "text-[#F2A900]" : "text-slate-400"}`}>
-                  <n.icon className="h-4 w-4" />
+                <Link key={n.to} to={n.to} className={`relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${active ? "text-[#F2A900]" : "text-slate-400"}`}>
+                  <div className="relative">
+                    <n.icon className="h-4 w-4" />
+                    {n.to === "/cart" && count > 0 && (
+                      <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-[#F2A900] px-1 text-[9px] font-black text-[#1A2B4C]">
+                        {count}
+                      </span>
+                    )}
+                  </div>
                   {n.label}
                 </Link>
               );

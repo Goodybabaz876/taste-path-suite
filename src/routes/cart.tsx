@@ -4,13 +4,15 @@ import { AppShell, PageHeader } from "@/components/AppShell";
 import { useCart } from "@/lib/cart";
 import { formatNaira } from "@/lib/format";
 import { dishImage } from "@/lib/dish-image";
+import { useAppSettings } from "@/hooks/use-app-settings";
 
 export const Route = createFileRoute("/cart")({ component: CartPage });
 
 function CartPage() {
   const { items, updateQty, remove, subtotal } = useCart();
-  const delivery = subtotal > 0 ? 1000 : 0;
-  const tax = Math.round(subtotal * 0.075);
+  const { deliveryFee, vatRate } = useAppSettings();
+  const delivery = subtotal > 0 ? deliveryFee : 0;
+  const tax = Math.round(subtotal * vatRate);
   const total = subtotal + delivery + tax;
 
   return (
@@ -75,7 +77,7 @@ function CartPage() {
             <div className="mt-4 space-y-2 text-sm font-medium">
               <Row label="Subtotal" value={formatNaira(subtotal)} />
               <Row label="Delivery" value={formatNaira(delivery)} />
-              <Row label="VAT (7.5%)" value={formatNaira(tax)} />
+              <Row label={`VAT (${(vatRate * 100).toFixed(1)}%)`} value={formatNaira(tax)} />
             </div>
             <div className="mt-4 border-t border-[#E2E1D0] pt-4 flex justify-between items-center">
               <div className="font-display font-black text-[#1A2B4C]">Total</div>

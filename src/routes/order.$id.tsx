@@ -126,7 +126,7 @@ function OrderTracking() {
           <div className="rounded-2xl border border-border/60 bg-card p-5">
             <div className="flex items-center gap-2 font-display font-bold"><Phone className="h-4 w-4 text-accent" /> Need help?</div>
             <div className="mt-2 text-sm">ELIZADE FOODS Support</div>
-            <a href="tel:+2348000000000" className="text-sm text-accent hover:underline">+234 800 000 0000</a>
+            <a href="tel:+2348030744896" className="text-sm text-accent hover:underline">08030744896</a>
             <div className="mt-1 text-xs text-muted-foreground">Available 8am–11pm daily</div>
           </div>
         </div>

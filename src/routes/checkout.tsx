@@ -9,6 +9,7 @@ import { useCart } from "@/lib/cart";
 import { formatNaira } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useAppSettings } from "@/hooks/use-app-settings";
 
 
 export const Route = createFileRoute("/checkout")({ component: CheckoutPage });
@@ -47,8 +48,9 @@ function CheckoutPage() {
     },
   });
 
-  const delivery = fulfillment === "delivery" && subtotal > 0 ? 1000 : 0;
-  const tax = Math.round(subtotal * 0.075);
+  const { deliveryFee, vatRate } = useAppSettings();
+  const delivery = fulfillment === "delivery" && subtotal > 0 ? deliveryFee : 0;
+  const tax = Math.round(subtotal * vatRate);
   const total = subtotal + delivery + tax;
 
 
