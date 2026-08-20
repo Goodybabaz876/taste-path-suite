@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Check, ToggleLeft, ToggleRight, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { formatNaira } from "@/lib/format";
+import { AVAILABILITY_META, AVAILABILITY_STATUSES, toStatus, type AvailabilityStatus } from "@/lib/availability";
 
 export const Route = createFileRoute("/admin/menu")({ component: AdminMenu });
 
@@ -13,6 +14,7 @@ type MenuItem = {
   id: string; name: string; description: string; price: number;
   category_id: string; image_url: string | null; ingredients: string[];
   prep_time_minutes: number; dietary_tags: string[]; spice_level: number; is_available: boolean;
+  availability_status: AvailabilityStatus | null;
   kitchen_id: string | null;
 };
 type Category = { id: string; name: string; slug: string };
