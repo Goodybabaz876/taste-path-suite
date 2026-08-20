@@ -185,9 +185,14 @@ function AdminMenu() {
     }
   };
 
-  const toggleAvailable = async (item: MenuItem) => {
-    const { error } = await supabase.from("menu_items").update({ is_available: !item.is_available }).eq("id", item.id);
+  /** Three-state availability: Available Now / Pending (coming soon) / Unavailable. */
+  const setStatus = async (item: MenuItem, status: AvailabilityStatus) => {
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ availability_status: status, is_available: status === "available" })
+      .eq("id", item.id);
     if (error) return toast.error(error.message);
+    toast.success(`${item.name} — ${AVAILABILITY_META[status].label}`);
     qc.invalidateQueries({ queryKey: ["admin-menu-items"] });
     qc.invalidateQueries({ queryKey: ["menu_items"] });
   };
