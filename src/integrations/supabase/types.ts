@@ -50,6 +50,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       kitchens: {
         Row: {
           code: string
@@ -437,6 +455,20 @@ export type Database = {
           month_start: string
           order_count: number
           revenue: number
+        }[]
+      }
+      get_admin_orders_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          fulfillment: string
+          id: string
+          items: Json
+          kitchen_name: string
+          status: string
+          total: number
+          user_email: string
+          user_id: string
         }[]
       }
       get_admin_sales_analytics: {
