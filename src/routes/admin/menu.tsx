@@ -352,7 +352,7 @@ function AdminMenu() {
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
-              {["Item", "Kitchen", "Category", "Price", "Prep", "Spice", "Available", ""].map((h) => (
+              {["Item", "Kitchen", "Category", "Price", "Prep", "Spice", "Status", ""].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">{h}</th>
               ))}
             </tr>
@@ -365,7 +365,7 @@ function AdminMenu() {
                 </tr>
               ))
             ) : (items.data ?? []).filter((it) => kitchenFilter === "all" || it.kitchen_id === kitchenFilter).map((item) => (
-              <tr key={item.id} className={`border-b border-white/5 transition hover:bg-white/5 ${!item.is_available ? "opacity-50" : ""}`}>
+              <tr key={item.id} className={`border-b border-white/5 transition hover:bg-white/5 ${toStatus(item.availability_status, item.is_available) === "unavailable" ? "opacity-50" : ""}`}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {item.image_url && <img src={item.image_url} alt={item.name} className="h-10 w-10 rounded-lg object-cover" />}
