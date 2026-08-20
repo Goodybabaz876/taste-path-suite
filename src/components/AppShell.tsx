@@ -1,10 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Flame, ShoppingBag, User, ChefHat, ClipboardList, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { AdminFab } from "@/components/AdminFab";
 import { useAuth } from "@/hooks/use-auth";
+import { useKitchens } from "@/hooks/use-kitchens";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ReactNode } from "react";
@@ -16,19 +16,6 @@ const NAV = [
 ];
 
 
-export function useKitchens() {
-  return useQuery({
-    queryKey: ["kitchens"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("kitchens")
-        .select("id, name, code, sort_order")
-        .order("sort_order");
-      if (error) throw error;
-      return data as { id: string; name: string; code: string; sort_order: number }[];
-    },
-  });
-}
 
 function KitchensDropdown() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
