@@ -63,10 +63,19 @@ function AuthPage() {
         if (error) throw error;
         toast.success("Welcome back!");
       }
-      // Only redirect to /admin if the user explicitly logged in via the admin panel
+      // Admin-portal sign-in: verify the admin scope. If the account is not an
+      // admin we sign it straight back out instead of dropping it into the web
+      // app — the admin entry must never become a back door into the customer app.
       if (adminMode) {
-        const { data: isAdmin } = await supabase.rpc("is_admin");
-        nav({ to: isAdmin ? "/admin" : (redirect || "/") });
+        const { data, error: scopeErr } = await supabase.rpc("get_my_admin_scope");
+        const row = Array.isArray(data) ? data[0] : null;
+        if (scopeErr || !row) {
+          await supabase.auth.signOut();
+          toast.error("This account does not have admin access.");
+          setPassword("");
+          return;
+        }
+        nav({ to: row.is_super === true ? "/admin" : "/kitchen-admin" });
       } else {
         nav({ to: redirect || "/" });
       }
@@ -216,12 +225,14 @@ function AuthPage() {
               </div>
             </Link>
 
-            <h1 className="mt-6 font-display text-2xl font-black">Admin Access</h1>
-            <p className="mt-1 text-sm text-slate-400">Secure entry for staff and administrators.</p>
+            <h1 className="mt-6 font-display text-2xl font-black">Kitchen Admin Access</h1>
+            <p className="mt-1 text-sm text-slate-400">
+              Secure entry for cafeteria staff managing their kitchen's meals. Non-admin accounts are rejected.
+            </p>
 
             <div className="mt-6 space-y-3">
               <label className="block">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Admin ID</div>
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Kitchen admin email</div>
                 <div className="relative mt-1.5">
                   <input
                     type="email"
@@ -252,7 +263,7 @@ function AuthPage() {
               </label>
 
               <button onClick={submit} disabled={busy} className="mt-4 w-full rounded-xl bg-[#F2A900] py-3 text-sm font-semibold text-[#1A2B4C] hover:bg-[#E09B00] shadow-glow disabled:opacity-60 transition">
-                {busy ? "Authenticating..." : "Sign in to Dashboard"}
+                {busy ? "Verifying admin access..." : "Sign in to Kitchen Panel"}
               </button>
             </div>
             
