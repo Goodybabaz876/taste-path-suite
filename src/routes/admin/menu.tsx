@@ -421,3 +421,38 @@ function Field({ label, value, onChange, type = "text" }: {
     </label>
   );
 }
+
+/** Three-state availability selector used in the Meals table. */
+function StatusControl({
+  status,
+  onChange,
+  name,
+}: {
+  status: AvailabilityStatus;
+  onChange: (s: AvailabilityStatus) => void;
+  name: string;
+}) {
+  return (
+    <div className="inline-flex rounded-xl border border-white/10 bg-white/5 p-0.5" role="group" aria-label={`Availability for ${name}`}>
+      {AVAILABILITY_STATUSES.map((s) => {
+        const meta = AVAILABILITY_META[s];
+        const active = status === s;
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onChange(s)}
+            aria-pressed={active}
+            title={meta.hint}
+            className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide transition ${
+              active ? "shadow-sm" : "text-slate-400 hover:text-white"
+            }`}
+            style={active ? { background: meta.bg, color: meta.fg, boxShadow: `inset 0 0 0 1px ${meta.border}` } : undefined}
+          >
+            {meta.short}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
