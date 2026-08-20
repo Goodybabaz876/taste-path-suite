@@ -14,7 +14,7 @@ type MenuItem = {
   id: string; name: string; description: string; price: number;
   category_id: string; image_url: string | null; ingredients: string[];
   prep_time_minutes: number; dietary_tags: string[]; spice_level: number; is_available: boolean;
-  availability_status: AvailabilityStatus | null;
+  availability_status: AvailabilityStatus;
   kitchen_id: string | null;
 };
 type Category = { id: string; name: string; slug: string };
@@ -28,7 +28,7 @@ type CatalogItem = {
 const EMPTY: Omit<MenuItem, "id"> = {
   name: "", description: "", price: 0, category_id: "",
   image_url: null, ingredients: [], prep_time_minutes: 20,
-  dietary_tags: [], spice_level: 0, is_available: true, kitchen_id: null,
+  dietary_tags: [], spice_level: 0, is_available: true, availability_status: "available", kitchen_id: null,
 };
 
 function AdminMenu() {
@@ -116,6 +116,7 @@ function AdminMenu() {
       dietary_tags: c.dietary_tags ?? [],
       spice_level: c.spice_level,
       is_available: true,
+      availability_status: "available",
       kitchen_id: currentKitchenId,
     });
     setPicking(false);
