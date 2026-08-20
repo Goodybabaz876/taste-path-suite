@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Check, ToggleLeft, ToggleRight, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/use-admin";
 import { formatNaira } from "@/lib/format";
+import { AVAILABILITY_META, AVAILABILITY_STATUSES, toStatus, type AvailabilityStatus } from "@/lib/availability";
 
 export const Route = createFileRoute("/admin/menu")({ component: AdminMenu });
 
@@ -13,6 +14,7 @@ type MenuItem = {
   id: string; name: string; description: string; price: number;
   category_id: string; image_url: string | null; ingredients: string[];
   prep_time_minutes: number; dietary_tags: string[]; spice_level: number; is_available: boolean;
+  availability_status: AvailabilityStatus;
   kitchen_id: string | null;
 };
 type Category = { id: string; name: string; slug: string };
@@ -26,7 +28,7 @@ type CatalogItem = {
 const EMPTY: Omit<MenuItem, "id"> = {
   name: "", description: "", price: 0, category_id: "",
   image_url: null, ingredients: [], prep_time_minutes: 20,
-  dietary_tags: [], spice_level: 0, is_available: true, kitchen_id: null,
+  dietary_tags: [], spice_level: 0, is_available: true, availability_status: "available", kitchen_id: null,
 };
 
 function AdminMenu() {
@@ -114,6 +116,7 @@ function AdminMenu() {
       dietary_tags: c.dietary_tags ?? [],
       spice_level: c.spice_level,
       is_available: true,
+      availability_status: "available",
       kitchen_id: currentKitchenId,
     });
     setPicking(false);
@@ -182,9 +185,14 @@ function AdminMenu() {
     }
   };
 
-  const toggleAvailable = async (item: MenuItem) => {
-    const { error } = await supabase.from("menu_items").update({ is_available: !item.is_available }).eq("id", item.id);
+  /** Three-state availability: Available Now / Pending (coming soon) / Unavailable. */
+  const setStatus = async (item: MenuItem, status: AvailabilityStatus) => {
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ availability_status: status, is_available: status === "available" })
+      .eq("id", item.id);
     if (error) return toast.error(error.message);
+    toast.success(`${item.name} — ${AVAILABILITY_META[status].label}`);
     qc.invalidateQueries({ queryKey: ["admin-menu-items"] });
     qc.invalidateQueries({ queryKey: ["menu_items"] });
   };
@@ -344,7 +352,7 @@ function AdminMenu() {
         <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
-              {["Item", "Kitchen", "Category", "Price", "Prep", "Spice", "Available", ""].map((h) => (
+              {["Item", "Kitchen", "Category", "Price", "Prep", "Spice", "Status", ""].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-400">{h}</th>
               ))}
             </tr>
@@ -357,7 +365,7 @@ function AdminMenu() {
                 </tr>
               ))
             ) : (items.data ?? []).filter((it) => kitchenFilter === "all" || it.kitchen_id === kitchenFilter).map((item) => (
-              <tr key={item.id} className={`border-b border-white/5 transition hover:bg-white/5 ${!item.is_available ? "opacity-50" : ""}`}>
+              <tr key={item.id} className={`border-b border-white/5 transition hover:bg-white/5 ${toStatus(item.availability_status, item.is_available) === "unavailable" ? "opacity-50" : ""}`}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {item.image_url && <img src={item.image_url} alt={item.name} className="h-10 w-10 rounded-lg object-cover" />}
@@ -373,9 +381,11 @@ function AdminMenu() {
                 <td className="px-4 py-3 text-slate-300">{item.prep_time_minutes}m</td>
                 <td className="px-4 py-3 text-slate-300">{"🌶️".repeat(item.spice_level) || "—"}</td>
                 <td className="px-4 py-3">
-                  <button onClick={() => toggleAvailable(item)} aria-label={item.is_available ? "Disable item" : "Enable item"} className="text-slate-400 transition hover:text-[#F2A900]">
-                    {item.is_available ? <ToggleRight className="h-5 w-5 text-emerald-400" /> : <ToggleLeft className="h-5 w-5" />}
-                  </button>
+                  <StatusControl
+                    status={toStatus(item.availability_status, item.is_available)}
+                    onChange={(s) => setStatus(item, s)}
+                    name={item.name}
+                  />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -409,5 +419,40 @@ function Field({ label, value, onChange, type = "text" }: {
         className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white placeholder-slate-600 focus:border-[#F2A900] focus:outline-none focus:ring-2 focus:ring-[#F2A900]/20"
       />
     </label>
+  );
+}
+
+/** Three-state availability selector used in the Meals table. */
+function StatusControl({
+  status,
+  onChange,
+  name,
+}: {
+  status: AvailabilityStatus;
+  onChange: (s: AvailabilityStatus) => void;
+  name: string;
+}) {
+  return (
+    <div className="inline-flex rounded-xl border border-white/10 bg-white/5 p-0.5" role="group" aria-label={`Availability for ${name}`}>
+      {AVAILABILITY_STATUSES.map((s) => {
+        const meta = AVAILABILITY_META[s];
+        const active = status === s;
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onChange(s)}
+            aria-pressed={active}
+            title={meta.hint}
+            className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide transition ${
+              active ? "shadow-sm" : "text-slate-400 hover:text-white"
+            }`}
+            style={active ? { background: meta.bg, color: meta.fg, boxShadow: `inset 0 0 0 1px ${meta.border}` } : undefined}
+          >
+            {meta.short}
+          </button>
+        );
+      })}
+    </div>
   );
 }

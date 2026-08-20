@@ -137,8 +137,8 @@ function CheckoutPage() {
       if (liErr) throw liErr;
 
       clear();
-      toast.success("Order placed! Tracking it now.");
-      navigate({ to: "/order/$id", params: { id: order.id } });
+      toast.success("Payment confirmed!");
+      navigate({ to: "/payment-success/$id", params: { id: order.id } });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
       toast.error(msg);

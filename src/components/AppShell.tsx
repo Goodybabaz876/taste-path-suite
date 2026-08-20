@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Flame, ShoppingBag, User, ChefHat, ClipboardList, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import { AdminFab } from "@/components/AdminFab";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -274,6 +275,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </div>
         </nav>
+
+        {/* Admin entry point — only renders for admins */}
+        <AdminFab />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { PendingOrders } from "@/components/PendingOrders";
 import { formatNaira } from "@/lib/format";
 import { dishImage, heroBanner } from "@/lib/dish-image";
+import { toStatus } from "@/lib/availability";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): { kitchen?: string } =>
@@ -19,6 +20,7 @@ type MenuItem = {
   id: string; category_id: string; name: string; description: string;
   price: number; image_url: string | null; ingredients: string[];
   prep_time_minutes: number; dietary_tags: string[]; spice_level: number;
+  is_available: boolean; availability_status: string | null;
   kitchen_id: string | null;
 };
 type Kitchen = { id: string; name: string; code: string };
@@ -57,9 +59,12 @@ function MenuPage() {
   const items = useQuery({
     queryKey: ["menu_items"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("menu_items").select("*").eq("is_available", true);
+      // Available and Pending meals are both shown; Unavailable stays hidden.
+      const { data, error } = await supabase.from("menu_items").select("*");
       if (error) throw error;
-      return data as MenuItem[];
+      return (data as MenuItem[]).filter(
+        (it) => toStatus(it.availability_status, it.is_available) !== "unavailable",
+      );
     },
   });
 
