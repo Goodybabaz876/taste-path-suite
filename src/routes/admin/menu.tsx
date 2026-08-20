@@ -381,9 +381,11 @@ function AdminMenu() {
                 <td className="px-4 py-3 text-slate-300">{item.prep_time_minutes}m</td>
                 <td className="px-4 py-3 text-slate-300">{"🌶️".repeat(item.spice_level) || "—"}</td>
                 <td className="px-4 py-3">
-                  <button onClick={() => toggleAvailable(item)} aria-label={item.is_available ? "Disable item" : "Enable item"} className="text-slate-400 transition hover:text-[#F2A900]">
-                    {item.is_available ? <ToggleRight className="h-5 w-5 text-emerald-400" /> : <ToggleLeft className="h-5 w-5" />}
-                  </button>
+                  <StatusControl
+                    status={toStatus(item.availability_status, item.is_available)}
+                    onChange={(s) => setStatus(item, s)}
+                    name={item.name}
+                  />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
