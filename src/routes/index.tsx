@@ -120,7 +120,7 @@ function MenuPage() {
             Order food from the comfort of your hostel
           </h1>
           <p className="mt-3 max-w-xl text-base font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
-            Jollof, Egusi, Suya and everything in between — cooked to order and delivered hot & fast.
+             HOT, TASTY FOOD WITH FAST DELIVERY 
           </p>
         </div>
       </section>
